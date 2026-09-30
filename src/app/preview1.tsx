@@ -281,24 +281,24 @@ export function Preview1() {
 
       {/* FOOTER */}
       <footer className="p1-footer">
-        <div className="p1-footer-inner" style={{ flexDirection: "column", gap: 32 }}>
+        <div className="p1-footer-inner">
           {/* Top row */}
-          <div style={{ display: "flex", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: 32 }}>
+          <div className="p1-footer-cols">
             {/* Brand */}
-            <div style={{ maxWidth: 280 }}>
-              <div className="p1-footer-brand" style={{ marginBottom: 12 }}>
+            <div className="p1-footer-brand-col">
+              <div className="p1-footer-brand">
                 <span className="p1-footer-brand-icon">TG</span>
-                <span style={{ fontWeight: 700, color: "var(--p1-ink)", fontFamily: "var(--p1-font-display)" }}>TrackGPS</span>
+                <span className="p1-footer-brand-name">TrackGPS</span>
               </div>
-              <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--p1-ink-faint)" }}>
+              <p className="p1-footer-desc">
                 Penyedia jasa pemasangan GPS tracking dan server monitoring real-time untuk semua jenis kendaraan.
               </p>
             </div>
 
             {/* Product */}
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--p1-ink)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12, fontFamily: "var(--p1-font-display)" }}>Produk</p>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="p1-footer-col">
+              <p className="p1-footer-heading">Produk</p>
+              <ul className="p1-footer-list">
                 <li><a href="#features" className="p1-footer-link">Fitur</a></li>
                 <li><a href="#advantages" className="p1-footer-link">Keunggulan</a></li>
                 <li><a href="#konsultasi" className="p1-footer-link">Konsultasi</a></li>
@@ -307,9 +307,9 @@ export function Preview1() {
             </div>
 
             {/* Services */}
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--p1-ink)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12, fontFamily: "var(--p1-font-display)" }}>Layanan</p>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="p1-footer-col">
+              <p className="p1-footer-heading">Layanan</p>
+              <ul className="p1-footer-list">
                 <li><span className="p1-footer-link">Pemasangan GPS</span></li>
                 <li><span className="p1-footer-link">Server Monitoring</span></li>
                 <li><span className="p1-footer-link">Kamera Kendaraan</span></li>
@@ -318,9 +318,9 @@ export function Preview1() {
             </div>
 
             {/* Company */}
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--p1-ink)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12, fontFamily: "var(--p1-font-display)" }}>Perusahaan</p>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="p1-footer-col">
+              <p className="p1-footer-heading">Perusahaan</p>
+              <ul className="p1-footer-list">
                 <li><span className="p1-footer-link">Tentang Kami</span></li>
                 <li><span className="p1-footer-link">Kontak</span></li>
                 <li><span className="p1-footer-link">Blog</span></li>
@@ -329,9 +329,9 @@ export function Preview1() {
             </div>
 
             {/* Legal */}
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--p1-ink)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12, fontFamily: "var(--p1-font-display)" }}>Legal</p>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="p1-footer-col">
+              <p className="p1-footer-heading">Legal</p>
+              <ul className="p1-footer-list">
                 <li><span className="p1-footer-link">Kebijakan Privasi</span></li>
                 <li><span className="p1-footer-link">Syarat & Ketentuan</span></li>
                 <li><span className="p1-footer-link">Kebijakan Cookie</span></li>
@@ -340,8 +340,8 @@ export function Preview1() {
           </div>
 
           {/* Bottom row */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingTop: 20, borderTop: "1px solid var(--p1-border)", flexWrap: "wrap", gap: 12 }}>
-            <span style={{ fontSize: 12, color: "var(--p1-ink-faint)" }}>© {new Date().getFullYear()} TrackGPS. Hak cipta dilindungi.</span>
+          <div className="p1-footer-bottom">
+            <span className="p1-footer-copy">© {new Date().getFullYear()} TrackGPS. Hak cipta dilindungi.</span>
             <div className="p1-footer-links">
               <a href="#features">Fitur</a>
               <a href="#advantages">Keunggulan</a>

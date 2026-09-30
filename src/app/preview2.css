@@ -352,11 +352,40 @@
 }
 .p2-footer-inner {
   max-width: 1120px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 28px;
+}
+.p2-footer-cols {
+  display: grid;
+  grid-template-columns: 1.5fr repeat(4, minmax(0, 1fr));
+  gap: 32px 24px;
+  width: 100%;
+}
+.p2-footer-brand-col { max-width: 280px; }
+.p2-footer-col { min-width: 0; }
+.p2-footer-heading {
+  font-size: 12px; font-weight: 600;
+  color: var(--p2-ink);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 12px;
+  font-family: var(--p2-font-display);
+}
+.p2-footer-list {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.p2-footer-bottom {
   display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 20px;
+  flex-wrap: wrap; gap: 12px;
+  width: 100%; padding-top: 16px;
+  border-top: 1px solid var(--p2-border);
+}
+.p2-footer-desc {
+  font-size: 13px; line-height: 1.6;
+  color: var(--p2-ink-faint);
 }
 .p2-footer-brand {
   display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
 }
 .p2-footer-brand-icon {
   display: flex; align-items: center; justify-content: center;
@@ -371,7 +400,7 @@
   font-size: 14px; font-weight: 600;
   color: var(--p2-ink-muted);
 }
-.p2-footer-links { display: flex; gap: 20px; }
+.p2-footer-links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .p2-footer-links a {
   font-size: 13px; color: var(--p2-ink-faint);
   text-decoration: none; transition: color 0.15s;
@@ -396,11 +425,29 @@
   .p2-bento-card--wide { grid-column: span 2; }
   .p2-how-steps { grid-template-columns: 1fr; }
   .p2-consult-grid { grid-template-columns: 1fr; }
-  .p2-footer-inner { flex-direction: column; text-align: center; }
 }
 @media (max-width: 480px) {
   .p2-bento-grid { grid-template-columns: 1fr; }
   .p2-bento-card--wide { grid-column: span 1; }
   .p2-hero h1 { font-size: 1.6rem; }
   .p2-nav-right .p2-btn-ghost { display: none; }
+}
+
+/* --- Footer: progressive collapse 900 → 600 → 400 --- */
+@media (max-width: 900px) {
+  .p2-footer-cols {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 28px 20px;
+  }
+  .p2-footer-brand-col { grid-column: 1 / -1; max-width: 440px; }
+}
+@media (max-width: 600px) {
+  .p2-footer-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 20px;
+  }
+}
+@media (max-width: 400px) {
+  .p2-footer-cols { grid-template-columns: minmax(0, 1fr); }
+  .p2-footer-bottom { flex-direction: column; align-items: flex-start; }
 }

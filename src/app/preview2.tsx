@@ -218,23 +218,23 @@ export function Preview2() {
 
       {/* FOOTER */}
       <footer className="p2-footer">
-        <div className="p2-footer-inner" style={{ flexDirection: "column", gap: 28 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: 28 }}>
+        <div className="p2-footer-inner">
+          <div className="p2-footer-cols">
             {/* Brand */}
-            <div style={{ maxWidth: 260 }}>
-              <div className="p2-footer-brand" style={{ marginBottom: 10 }}>
+            <div className="p2-footer-brand-col">
+              <div className="p2-footer-brand">
                 <span className="p2-footer-brand-icon">TG</span>
                 <span className="p2-footer-tagline">TrackGPS</span>
               </div>
-              <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--p2-ink-faint)" }}>
+              <p className="p2-footer-desc">
                 Jasa pemasangan GPS tracking dan server monitoring real-time untuk semua jenis kendaraan.
               </p>
             </div>
 
             {/* Produk */}
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--p2-ink)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12, fontFamily: "var(--p2-font-display)" }}>Produk</p>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="p2-footer-col">
+              <p className="p2-footer-heading">Produk</p>
+              <ul className="p2-footer-list">
                 <li><a href="#features" className="p2-footer-link">Fitur</a></li>
                 <li><a href="#how" className="p2-footer-link">Cara Kerja</a></li>
                 <li><a href="#konsultasi" className="p2-footer-link">Konsultasi</a></li>
@@ -243,9 +243,9 @@ export function Preview2() {
             </div>
 
             {/* Layanan */}
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--p2-ink)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12, fontFamily: "var(--p2-font-display)" }}>Layanan</p>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="p2-footer-col">
+              <p className="p2-footer-heading">Layanan</p>
+              <ul className="p2-footer-list">
                 <li><span className="p2-footer-link">Pemasangan GPS</span></li>
                 <li><span className="p2-footer-link">Server Monitoring</span></li>
                 <li><span className="p2-footer-link">Kamera Kendaraan</span></li>
@@ -254,9 +254,9 @@ export function Preview2() {
             </div>
 
             {/* Perusahaan */}
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--p2-ink)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12, fontFamily: "var(--p2-font-display)" }}>Perusahaan</p>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="p2-footer-col">
+              <p className="p2-footer-heading">Perusahaan</p>
+              <ul className="p2-footer-list">
                 <li><span className="p2-footer-link">Tentang Kami</span></li>
                 <li><span className="p2-footer-link">Kontak</span></li>
                 <li><span className="p2-footer-link">Blog</span></li>
@@ -265,9 +265,9 @@ export function Preview2() {
             </div>
 
             {/* Legal */}
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--p2-ink)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12, fontFamily: "var(--p2-font-display)" }}>Legal</p>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="p2-footer-col">
+              <p className="p2-footer-heading">Legal</p>
+              <ul className="p2-footer-list">
                 <li><span className="p2-footer-link">Kebijakan Privasi</span></li>
                 <li><span className="p2-footer-link">Syarat & Ketentuan</span></li>
               </ul>
@@ -275,7 +275,7 @@ export function Preview2() {
           </div>
 
           {/* Bottom */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingTop: 16, borderTop: "1px solid var(--p2-border)", flexWrap: "wrap", gap: 12 }}>
+          <div className="p2-footer-bottom">
             <span className="p2-footer-copy">© {new Date().getFullYear()} TrackGPS. Hak cipta dilindungi.</span>
             <div className="p2-footer-links">
               <a href="#features">Fitur</a>

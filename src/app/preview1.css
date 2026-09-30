@@ -406,12 +406,47 @@
 }
 .p1-footer-inner {
   max-width: 1120px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 32px;
+}
+.p1-footer-cols {
+  display: grid;
+  grid-template-columns: 1.5fr repeat(4, minmax(0, 1fr));
+  gap: 32px 24px;
+  width: 100%;
+}
+.p1-footer-brand-col { max-width: 300px; }
+.p1-footer-col { min-width: 0; }
+.p1-footer-heading {
+  font-size: 12px; font-weight: 600;
+  color: var(--p1-ink);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 12px;
+  font-family: var(--p1-font-display);
+}
+.p1-footer-list {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.p1-footer-bottom {
   display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 16px;
+  flex-wrap: wrap; gap: 12px;
+  width: 100%; padding-top: 20px;
+  border-top: 1px solid var(--p1-border);
+}
+.p1-footer-copy { font-size: 12px; color: var(--p1-ink-faint); }
+.p1-footer-desc {
+  font-size: 13px; line-height: 1.6;
+  color: var(--p1-ink-faint);
 }
 .p1-footer-brand {
   display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
   font-size: 13px; color: var(--p1-ink-faint);
+}
+.p1-footer-brand-name {
+  font-weight: 700;
+  color: var(--p1-ink);
+  font-family: var(--p1-font-display);
 }
 .p1-footer-brand-icon {
   display: flex; align-items: center; justify-content: center;
@@ -422,7 +457,7 @@
   font-size: 9px; font-weight: 800;
   font-family: var(--p1-font-display);
 }
-.p1-footer-links { display: flex; gap: 20px; }
+.p1-footer-links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .p1-footer-links a {
   font-size: 13px; color: var(--p1-ink-faint);
   text-decoration: none;
@@ -446,11 +481,29 @@
   .p1-features-grid { grid-template-columns: 1fr; }
   .p1-advantages-grid { grid-template-columns: 1fr; }
   .p1-consult-grid { grid-template-columns: 1fr; }
-  .p1-footer-inner { flex-direction: column; text-align: center; }
 }
 @media (max-width: 480px) {
   .p1-stats-grid { grid-template-columns: 1fr 1fr; }
   .p1-hero h1 { font-size: 1.75rem; }
   .p1-nav-inner { padding: 6px 6px 6px 14px; }
   .p1-nav-actions .p1-btn-ghost { display: none; }
+}
+
+/* --- Footer: progressive collapse 900 → 600 → 400 --- */
+@media (max-width: 900px) {
+  .p1-footer-cols {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 28px 20px;
+  }
+  .p1-footer-brand-col { grid-column: 1 / -1; max-width: 460px; }
+}
+@media (max-width: 600px) {
+  .p1-footer-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 20px;
+  }
+}
+@media (max-width: 400px) {
+  .p1-footer-cols { grid-template-columns: minmax(0, 1fr); }
+  .p1-footer-bottom { flex-direction: column; align-items: flex-start; }
 }
