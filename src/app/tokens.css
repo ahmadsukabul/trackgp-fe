@@ -1,0 +1,101 @@
+/* Hallmark · tokens.css — TrackGPS Landing Page Design System
+ * Generated from 3 preview builds:
+ *   Preview 1: Stat-Led + Cobalt (blue accent, Space Grotesk)
+ *   Preview 2: Bento Grid + Coral (warm accent, DM Sans)
+ *   Preview 3: Workbench + Aurora (green-cyan, JetBrains Mono)
+ */
+
+/* === Preview 1: Cobalt === */
+:root {
+  --p1-paper: oklch(98% 0.005 260);
+  --p1-paper-alt: oklch(96% 0.008 260);
+  --p1-surface: oklch(100% 0 0);
+  --p1-ink: oklch(15% 0.02 260);
+  --p1-ink-muted: oklch(45% 0.02 260);
+  --p1-ink-faint: oklch(62% 0.015 260);
+  --p1-accent: oklch(55% 0.18 260);
+  --p1-accent-light: oklch(93% 0.04 260);
+  --p1-accent-hover: oklch(48% 0.20 260);
+  --p1-border: oklch(90% 0.01 260);
+  --p1-success: oklch(62% 0.17 155);
+  --p1-warning: oklch(75% 0.15 75);
+  --p1-radius: 12px;
+  --p1-radius-sm: 8px;
+  --p1-radius-lg: 20px;
+  --p1-font-display: 'Space Grotesk', system-ui, sans-serif;
+  --p1-font-body: 'Inter', system-ui, sans-serif;
+}
+
+.dark {
+  --p1-paper: oklch(13% 0.015 260);
+  --p1-paper-alt: oklch(16% 0.018 260);
+  --p1-surface: oklch(18% 0.02 260);
+  --p1-ink: oklch(95% 0.005 260);
+  --p1-ink-muted: oklch(72% 0.015 260);
+  --p1-ink-faint: oklch(52% 0.015 260);
+  --p1-accent: oklch(65% 0.18 260);
+  --p1-accent-light: oklch(25% 0.06 260);
+  --p1-accent-hover: oklch(72% 0.16 260);
+  --p1-border: oklch(25% 0.02 260);
+  --p1-success: oklch(70% 0.16 155);
+  --p1-warning: oklch(80% 0.14 75);
+}
+
+/* === Preview 2: Coral === */
+:root {
+  --p2-paper: oklch(98% 0.005 40);
+  --p2-paper-alt: oklch(96% 0.008 40);
+  --p2-surface: oklch(100% 0 0);
+  --p2-ink: oklch(15% 0.01 40);
+  --p2-ink-muted: oklch(45% 0.015 40);
+  --p2-ink-faint: oklch(62% 0.01 40);
+  --p2-accent: oklch(62% 0.19 28);
+  --p2-accent-light: oklch(94% 0.04 28);
+  --p2-accent-hover: oklch(56% 0.21 28);
+  --p2-border: oklch(91% 0.008 40);
+  --p2-success: oklch(62% 0.17 155);
+  --p2-warning: oklch(75% 0.15 75);
+  --p2-radius: 16px;
+  --p2-radius-sm: 10px;
+  --p2-radius-lg: 24px;
+  --p2-font-display: 'DM Sans', system-ui, sans-serif;
+  --p2-font-body: 'DM Sans', system-ui, sans-serif;
+}
+
+.dark {
+  --p2-paper: oklch(14% 0.01 40);
+  --p2-paper-alt: oklch(17% 0.015 40);
+  --p2-surface: oklch(19% 0.018 40);
+  --p2-ink: oklch(95% 0.005 40);
+  --p2-ink-muted: oklch(72% 0.01 40);
+  --p2-ink-faint: oklch(52% 0.01 40);
+  --p2-accent: oklch(70% 0.17 28);
+  --p2-accent-light: oklch(28% 0.05 28);
+  --p2-accent-hover: oklch(76% 0.15 28);
+  --p2-border: oklch(26% 0.015 40);
+  --p2-success: oklch(70% 0.16 155);
+  --p2-warning: oklch(80% 0.14 75);
+}
+
+/* === Preview 3: Aurora === */
+:root {
+  --p3-paper: oklch(16% 0.02 170);
+  --p3-paper-alt: oklch(20% 0.025 170);
+  --p3-surface: oklch(22% 0.03 170);
+  --p3-surface-raised: oklch(26% 0.035 170);
+  --p3-ink: oklch(94% 0.005 170);
+  --p3-ink-muted: oklch(70% 0.02 170);
+  --p3-ink-faint: oklch(50% 0.015 170);
+  --p3-accent: oklch(72% 0.18 175);
+  --p3-accent-dim: oklch(55% 0.14 175);
+  --p3-accent-light: oklch(28% 0.06 175);
+  --p3-border: oklch(30% 0.025 170);
+  --p3-success: oklch(70% 0.17 155);
+  --p3-warning: oklch(78% 0.14 85);
+  --p3-danger: oklch(65% 0.18 25);
+  --p3-radius: 10px;
+  --p3-radius-sm: 6px;
+  --p3-radius-lg: 16px;
+  --p3-font-display: 'JetBrains Mono', monospace;
+  --p3-font-body: 'Inter', system-ui, sans-serif;
+}

@@ -1,0 +1,79 @@
+/* Hallmark · v1 Dashboard · Workbench + Aurora theme (dark-only)
+ * Matches Preview 3 landing page — dark paper, green-cyan accent, JetBrains Mono display
+ * v1 pages are always dark; no light mode.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --v1-paper: oklch(13% 0.015 260);
+  --v1-surface: oklch(18% 0.02 260);
+  --v1-surface-raised: oklch(22% 0.025 260);
+  --v1-surface-hover: oklch(24% 0.03 260);
+  --v1-ink: oklch(95% 0.005 260);
+  --v1-ink-muted: oklch(72% 0.015 260);
+  --v1-ink-faint: oklch(52% 0.015 260);
+  --v1-accent: oklch(72% 0.18 175);
+  --v1-accent-dim: oklch(55% 0.14 175);
+  --v1-accent-light: oklch(28% 0.06 175);
+  --v1-accent-glow: oklch(72% 0.18 175 / 0.12);
+  --v1-border: oklch(25% 0.02 260);
+  --v1-border-subtle: oklch(22% 0.015 260);
+  --v1-success: oklch(70% 0.17 155);
+  --v1-success-bg: oklch(70% 0.17 155 / 0.12);
+  --v1-warning: oklch(78% 0.14 85);
+  --v1-warning-bg: oklch(78% 0.14 85 / 0.12);
+  --v1-danger: oklch(65% 0.18 25);
+  --v1-danger-bg: oklch(65% 0.18 25 / 0.12);
+  --v1-danger-border: oklch(65% 0.18 25 / 0.25);
+  --v1-radius: 10px;
+  --v1-radius-sm: 6px;
+  --v1-radius-lg: 16px;
+  --v1-font-display: 'JetBrains Mono', monospace;
+  --v1-font-body: 'Inter', system-ui, sans-serif;
+  --v1-shadow: 0 1px 3px oklch(0% 0 0 / 0.3);
+  --v1-shadow-md: 0 4px 16px oklch(0% 0 0 / 0.4);
+  --v1-shadow-lg: 0 8px 32px oklch(0% 0 0 / 0.5);
+  --v1-glow: 0 0 24px oklch(72% 0.18 175 / 0.15);
+}
+
+/* Force dark background on v1 root — no light mode */
+.v1-root {
+  background: var(--v1-paper);
+  color: var(--v1-ink);
+  font-family: var(--v1-font-body);
+}
+
+/* Dark mode fallback — always apply dark values regardless of theme context */
+html.dark .v1-root,
+html .v1-root {
+  background: var(--v1-paper);
+  color: var(--v1-ink);
+}
+
+/* Override any global light-mode card/input/table backgrounds inside v1 */
+.v1-root .bg-white,
+.v1-root [class*="bg-white"] {
+  background-color: var(--v1-surface) !important;
+}
+
+.v1-root .bg-gray-50,
+.v1-root [class*="bg-gray-50"] {
+  background-color: var(--v1-surface-raised) !important;
+}
+
+.v1-root .bg-gray-100,
+.v1-root [class*="bg-gray-100"]:not([class*="animate-pulse"]) {
+  background-color: var(--v1-surface-raised) !important;
+}
+
+.v1-root .bg-gray-200,
+.v1-root [class*="bg-gray-200"] {
+  background-color: var(--v1-surface-raised) !important;
+}
+
+/* Select option backgrounds */
+.v1-root select option {
+  background-color: var(--v1-surface);
+  color: var(--v1-ink);
+}
