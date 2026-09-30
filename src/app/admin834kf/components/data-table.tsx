@@ -23,8 +23,10 @@ type FilterOption = { label: string; value: string };
 type SearchField = {
   /** Key yang dikirim ke API, misal "name", "bisnis_id", "unique_id" */
   key: string;
-  /** Placeholder input */
-  placeholder: string;
+  /** Label / placeholder input */
+  label?: string;
+  /** Placeholder input (fallback ke label) */
+  placeholder?: string;
   /** Lebar input (Tailwind class), default w-[160px] */
   width?: string;
 };
@@ -141,7 +143,7 @@ export function DataTable<T extends Record<string, unknown>>({
                     value={fieldValues[field.key] || ""}
                     onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
                     onKeyDown={(e) => { if (e.key === "Enter") handleSearch(e); }}
-                    placeholder={field.placeholder}
+                    placeholder={field.label || field.placeholder}
                     className="w-full pl-8 pr-2 py-2 text-[13px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2964e7]/30 focus:border-[#2964e7]"
                   />
                 </div>
