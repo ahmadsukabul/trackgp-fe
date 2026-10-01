@@ -5,6 +5,13 @@
 
 import { apiFetch, apiFetchRaw, apiFetchPublic, type ApiResponse } from "./api";
 
+/**
+ * LIST_LIMIT — jumlah baris yang diminta untuk setiap endpoint list client.
+ * BE hanya memasang LIMIT kalau limit > 0, jadi nilainya harus selalu dikirim
+ * eksplisit supaya tidak menarik seluruh tabel.
+ */
+const LIST_LIMIT = 100;
+
 /* ============ Types (selaras entities/*.go) ============ */
 
 export interface Bisnis {
@@ -145,6 +152,40 @@ export interface User {
   updated_at?: string;
 }
 
+export interface Geofence {
+  id?: number;
+  geofence_id: string;
+  bisnis_id?: string;
+  name: string;
+  description: string;
+  area: string;
+  area_type: string;
+  center_lat: number;
+  center_lng: number;
+  radius: number;
+  polygon_coords: string;
+  color: string;
+  min_fixes?: number;
+  status: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** GPSEvent — event/alarm dari device (geofenceEnter/geofenceExit, alarm, dll). */
+export interface GPSEvent {
+  id: number;
+  event_id: string;
+  device_id: string;
+  bisnis_id: string;
+  event_type: string;
+  event_time: string;
+  geofence_id: string;
+  message: string;
+  is_read: number;
+  attributes_json: string;
+  created_at: string;
+}
+
 export interface DashboardStats {
   bisnis_id: string;
   bisnis_name: string;
@@ -194,7 +235,7 @@ export function bisnisDetail(): Promise<ApiResponse<Bisnis>> {
 /* ============ Team: member ============ */
 // POST /client/bisnis/member/list
 export function memberList(): Promise<ApiResponse<Member[]>> {
-  return apiFetch("/client/bisnis/member/list", {});
+  return apiFetch("/client/bisnis/member/list", { limit: LIST_LIMIT });
 }
 
 // POST /client/bisnis/member/add
@@ -224,7 +265,7 @@ export function memberDelete(buId: string): Promise<ApiResponse<null>> {
 /* ============ Team: role granular ============ */
 // POST /client/bisnis/role/list
 export function roleList(): Promise<ApiResponse<Role[]>> {
-  return apiFetch("/client/bisnis/role/list", {});
+  return apiFetch("/client/bisnis/role/list", { limit: LIST_LIMIT });
 }
 
 // POST /client/bisnis/role/detail
@@ -265,7 +306,7 @@ export function dashboardStats(): Promise<ApiResponse<DashboardStats>> {
 /* ============ GPS Device ============ */
 // POST /client/device/list
 export function deviceList(): Promise<ApiResponse<Device[]>> {
-  return apiFetch("/client/device/list", {});
+  return apiFetch("/client/device/list", { limit: LIST_LIMIT });
 }
 
 // POST /client/device/detail
@@ -319,13 +360,13 @@ export interface DevicePosition extends Device {
 }
 
 export function devicePositions(): Promise<ApiResponse<DevicePosition[]>> {
-  return apiFetch("/client/device/positions", {});
+  return apiFetch("/client/device/positions", { limit: LIST_LIMIT });
 }
 
 /* ============ Camera ============ */
 // POST /client/camera/list — kirim device_id untuk memfilter kamera milik satu GPS
 export function cameraList(deviceId?: string): Promise<ApiResponse<Camera[]>> {
-  return apiFetch("/client/camera/list", deviceId ? { device_id: deviceId } : {});
+  return apiFetch("/client/camera/list", deviceId ? { device_id: deviceId, limit: LIST_LIMIT } : { limit: LIST_LIMIT });
 }
 
 // POST /client/camera/detail
@@ -364,7 +405,7 @@ export function cameraDelete(cameraId: string): Promise<ApiResponse<null>> {
 /* ============ Vehicle ============ */
 // POST /client/vehicle/list
 export function vehicleList(): Promise<ApiResponse<Vehicle[]>> {
-  return apiFetch("/client/vehicle/list", {});
+  return apiFetch("/client/vehicle/list", { limit: LIST_LIMIT });
 }
 
 // POST /client/vehicle/detail
@@ -414,7 +455,7 @@ export function vehicleDelete(vehicleId: string): Promise<ApiResponse<null>> {
 /* ============ Driver ============ */
 // POST /client/driver/list
 export function driverList(): Promise<ApiResponse<Driver[]>> {
-  return apiFetch("/client/driver/list", {});
+  return apiFetch("/client/driver/list", { limit: LIST_LIMIT });
 }
 
 // POST /client/driver/detail
@@ -479,7 +520,7 @@ export function driverVehicles(
 /* ============ User ============ */
 // POST /client/user/list
 export function userList(name?: string): Promise<ApiResponse<User[]>> {
-  return apiFetch("/client/user/list", name ? { name } : {});
+  return apiFetch("/client/user/list", name ? { name, limit: LIST_LIMIT } : { limit: LIST_LIMIT });
 }
 
 // POST /client/user/detail
@@ -514,3 +555,56 @@ export function userUpdate(payload: {
 export function userDelete(userId: string): Promise<ApiResponse<null>> {
   return apiFetch("/client/user/delete", { user_id: userId });
 }
+
+/* ============ Geofence ============ */
+// POST /client/geofence/list
+export function geofenceList(): Promise<ApiResponse<Geofence[]>> {
+  return apiFetch("/client/geofence/list", { limit: LIST_LIMIT });
+}
+
+// POST /client/geofence/detail
+export function geofenceDetail(geofenceId: string): Promise<ApiResponse<Geofence>> {
+  return apiFetch("/client/geofence/detail", { geofence_id: geofenceId });
+}
+
+// POST /client/geofence/add
+export function geofenceCreate(payload: {
+  name: string;
+  description?: string;
+  area_type?: string;
+  polygon_coords: string;
+  color?: string;
+  min_fixes?: number;
+}): Promise<ApiResponse<Geofence>> {
+  return apiFetch("/client/geofence/add", payload);
+}
+
+// POST /client/geofence/update
+export function geofenceUpdate(payload: {
+  geofence_id: string;
+  name?: string;
+  description?: string;
+  area_type?: string;
+  polygon_coords?: string;
+  color?: string;
+  status?: number;
+  min_fixes?: number;
+}): Promise<ApiResponse<null>> {
+  return apiFetch("/client/geofence/update", payload);
+}
+
+// POST /client/geofence/delete
+export function geofenceDelete(geofenceId: string): Promise<ApiResponse<null>> {
+  return apiFetch("/client/geofence/delete", { geofence_id: geofenceId });
+}
+
+// POST /client/geofence/events — log masuk/keluar area.
+export function geofenceEvents(payload: {
+  device_id?: string;
+  date?: string;
+  last_id?: number;
+  limit?: number;
+} = {}): Promise<ApiResponse<GPSEvent[]>> {
+  return apiFetch("/client/geofence/events", payload);
+}
+

@@ -37,11 +37,20 @@ import {
   Edit2,
   Trash2,
   Users,
+  RefreshCw,
+  Calendar,
+  History,
+  MapPinned,
+  LogIn,
+  LogOut,
 } from "lucide-react";
 import { adminFetch, getApiErrorMessage } from "../../lib/api";
 import { Section, StatCard, EmptyState } from "../../components/section";
 import { StatusBadge } from "../../components/data-table";
+import { PaginationBar } from "../../components/pagination";
+import { useKeysetPaging, ADMIN_PAGE_LIMIT } from "../../lib/use-keyset-paging";
 import GeofenceMapModal, { type GeofenceData } from "../../components/geofence-map-modal";
+import GeofenceEventMapModal from "../../components/geofence-event-map-modal";
 
 // ---- Tipe data dari BE ------------------------------------------------------
 
@@ -120,6 +129,43 @@ type Position = {
   updated_at: string;
 };
 
+type PositionHistory = {
+  id: number;
+  device_id: string;
+  bisnis_id: string;
+  latitude: number;
+  longitude: number;
+  altitude: number;
+  speed: number;
+  course: number;
+  accuracy: number;
+  ignition: number;
+  motion: number;
+  battery_level: number;
+  gps_valid: number;
+  satellites: number;
+  address: string;
+  protocol: string;
+  device_time: string;
+  server_time: string;
+  attributes_json: string;
+  created_at: string;
+};
+
+type GPSEvent = {
+  id: number;
+  event_id: string;
+  device_id: string;
+  bisnis_id: string;
+  event_type: string;
+  event_time: string;
+  geofence_id: string;
+  message: string;
+  is_read: number;
+  attributes_json: string;
+  created_at: string;
+};
+
 type DeviceCommand = {
   command_id: string;
   command_type: string;
@@ -170,6 +216,21 @@ function formatDateTime(value: string): string {
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} ${hh}:${mm}`;
+}
+
+/**
+ * Varian sampai DETIK: "27 Sep 2026 14:30:05". Dipakai kolom waktu log posisi,
+ * karena created_at/device_time di tbl_position_history berpresisi detik dan
+ * beberapa fix bisa jatuh di menit yang sama.
+ */
+function formatDateTimeSec(value: string): string {
+  if (!value) return "-";
+  const d = new Date(value.replace(" ", "T"));
+  if (Number.isNaN(d.getTime())) return value;
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} ${hh}:${mm}:${ss}`;
 }
 
 /** Label baterai: -1 = perangkat belum lapor. */
@@ -249,6 +310,92 @@ function commandStatusTone(
       return "gray";
   }
 }
+
+// ---- Helper event GPS (tbl_gps_event) ---------------------------------------
+
+/** Label tipe event yang ramah dibaca (fallback: tipe mentah). */
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  geofenceEnter: "Masuk Area",
+  geofenceExit: "Keluar Area",
+  sos: "SOS",
+  overspeed: "Melebihi Kecepatan",
+  vibration: "Getaran",
+  lowBattery: "Baterai Lemah",
+  powerCut: "Adaptor Dicabut",
+  powerOff: "Adaptor Dicabut",
+  removing: "Dibongkar",
+  tampering: "Manipulasi",
+  fallDown: "Terjatuh",
+  door: "Pintu",
+  lock: "Dikunci",
+  unlock: "Dibuka",
+  accident: "Kecelakaan",
+  tow: "Digandeng",
+  idle: "Idle",
+  hardAcceleration: "Akselerasi Mendadak",
+  hardBraking: "Pengereman Mendadak",
+  hardCornering: "Belokan Tajam",
+  jamming: "Sinyal Diblokir",
+  temperature: "Suhu",
+  fuelLeak: "Kebocoran BBM",
+  general: "Alarm Umum",
+  alarm: "Alarm",
+};
+
+function eventTypeLabel(type: string): string {
+  if (!type) return "Event";
+  return EVENT_TYPE_LABELS[type] || type;
+}
+
+function eventTone(type: string): "gray" | "yellow" | "blue" | "green" | "red" {
+  switch (type) {
+    case "geofenceEnter":
+      return "green";
+    case "geofenceExit":
+    case "sos":
+    case "powerCut":
+    case "powerOff":
+    case "removing":
+    case "accident":
+      return "red";
+    case "overspeed":
+    case "vibration":
+    case "lowBattery":
+    case "hardAcceleration":
+    case "hardBraking":
+    case "hardCornering":
+      return "yellow";
+    default:
+      return "gray";
+  }
+}
+
+/** Event yang terkait geofence (masuk/keluar area). */
+function isGeofenceEvent(ev: GPSEvent): boolean {
+  return ev.event_type === "geofenceEnter" || ev.event_type === "geofenceExit";
+}
+
+/**
+ * Titik GPS saat event. Engine geofence menulis {lat,lng} ke attributes_json;
+ * event dari sisi perangkat (alarm GT06) tidak. Kembalikan null kalau tidak ada
+ * supaya peta tetap bisa tampil tanpa marker.
+ */
+function eventPoint(ev: GPSEvent): { lat: number | null; lng: number | null } {
+  if (ev.attributes_json) {
+    try {
+      const attrs = JSON.parse(ev.attributes_json);
+      const lat = Number(attrs?.lat);
+      const lng = Number(attrs?.lng);
+      if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) {
+        return { lat, lng };
+      }
+    } catch {
+      // JSON rusak — anggap tidak ada koordinat.
+    }
+  }
+  return { lat: null, lng: null };
+}
+
 
 /** Baterai: -1 = perangkat belum lapor. Warna mengikuti level. */
 function BatteryIcon({ level }: { level: number }) {
@@ -367,6 +514,85 @@ export default function GpsDetailPage() {
   const [geofences, setGeofences] = useState<Geofence[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // ---- Log perangkat (tab: GPS Event / Log Posisi) ----
+  // Dua sumber data digabung dalam satu Section dengan tab. Tab GPS Event
+  // tampil lebih dulu karena event (alarm/geofence) yang biasanya dicari admin.
+  const [logTab, setLogTab] = useState<"event" | "position">("event");
+
+  // Event GPS (tbl_gps_event) — seluruh tipe event milik device ini.
+  const [evDateFilter, setEvDateFilter] = useState("");
+  const evDateRef = useRef("");
+  const evPaging = useKeysetPaging<GPSEvent>({
+    enabled: !!deviceId && logTab === "event",
+    fetchPage: ({ last_id, limit }) => {
+      const p = new URLSearchParams();
+      p.set("device_id", deviceId);
+      p.set("last_id", String(last_id));
+      p.set("limit", String(limit));
+      if (evDateRef.current) p.set("date", evDateRef.current);
+      return adminFetch<GPSEvent[]>(`/events/all?${p}`);
+    },
+  });
+
+  // Modal peta untuk event geofence — persis seperti di halaman detail geofence.
+  // Area dicari dulu di daftar geofence device (instan), lalu fallback ke
+  // /geofence/:id kalau tidak ada (mis. assignment sudah dilepas).
+  const [mapEvent, setMapEvent] = useState<GPSEvent | null>(null);
+  const [mapGeofence, setMapGeofence] = useState<{
+    name: string;
+    color: string;
+    polygon_coords: string;
+  } | null>(null);
+  const mapReqRef = useRef(0);
+
+  const openEventMap = useCallback(
+    async (ev: GPSEvent) => {
+      if (!isGeofenceEvent(ev)) return;
+      setMapEvent(ev);
+
+      const local = geofences.find((g) => g.geofence_id === ev.geofence_id);
+      if (local) {
+        setMapGeofence({
+          name: local.name,
+          color: local.color,
+          polygon_coords: local.polygon_coords,
+        });
+        return;
+      }
+      setMapGeofence(null);
+      if (!ev.geofence_id) {
+        // Event geofence dari sisi perangkat tidak menyimpan geofence_id,
+        // jadi areanya tidak bisa diambil — peta tetap tampil dengan titiknya.
+        return;
+      }
+      const reqId = ++mapReqRef.current;
+      const res = await adminFetch<Geofence>(`/geofence/${encodeURIComponent(ev.geofence_id)}`);
+      if (mapReqRef.current !== reqId) return;
+      setMapGeofence(
+        res.status === 1 && res.data
+          ? { name: res.data.name, color: res.data.color, polygon_coords: res.data.polygon_coords }
+          : null,
+      );
+    },
+    [geofences],
+  );
+
+  // ---- Log posisi mentah (tbl_position_history) ----
+  // Section di bawah halaman: semua fix GPS yang pernah diterima device ini.
+  const [posDateFilter, setPosDateFilter] = useState("");
+  const posDateRef = useRef("");
+  const posPaging = useKeysetPaging<PositionHistory>({
+    enabled: !!deviceId && logTab === "position",
+    fetchPage: ({ last_id, limit }) => {
+      const p = new URLSearchParams();
+      p.set("device_id", deviceId);
+      p.set("last_id", String(last_id));
+      p.set("limit", String(limit));
+      if (posDateRef.current) p.set("date", posDateRef.current);
+      return adminFetch<PositionHistory[]>(`/positions/history?${p}`);
+    },
+  });
 
   // State UI kirim command kustom. Pesan balasan GPS bersifat async — masuk
   // lewat TCP kemudian di-update ke baris command oleh BE. Kita re-fetch
@@ -1194,6 +1420,342 @@ export default function GpsDetailPage() {
           )}
         </Section>
       </div>
+
+      {/* Log perangkat — GPS Event + Log Posisi dalam satu Section bertab */}
+      <Section icon={<History className="w-4 h-4" />} title="Log">
+        {/* Tabs */}
+        <div className="flex items-center gap-1 mb-4 border-b border-gray-100 dark:border-gray-800/60">
+          <button
+            type="button"
+            onClick={() => setLogTab("event")}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 -mb-px text-[13px] font-medium border-b-2 transition-colors ${
+              logTab === "event"
+                ? "border-[#2964e7] text-[#2964e7]"
+                : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            GPS Event
+          </button>
+          <button
+            type="button"
+            onClick={() => setLogTab("position")}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 -mb-px text-[13px] font-medium border-b-2 transition-colors ${
+              logTab === "position"
+                ? "border-[#2964e7] text-[#2964e7]"
+                : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            }`}
+          >
+            <Navigation className="w-3.5 h-3.5" />
+            Log Posisi
+          </button>
+        </div>
+
+        {logTab === "event" ? (
+          <>
+            {/* Filter tanggal + refresh */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div className="relative">
+                <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                <input
+                  type="date"
+                  value={evDateFilter}
+                  onChange={(e) => {
+                    setEvDateFilter(e.target.value);
+                    evDateRef.current = e.target.value;
+                    setMapEvent(null);
+                    setMapGeofence(null);
+                    evPaging.reset();
+                  }}
+                  className="pl-8 pr-3 py-2 text-[13px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2964e7]/30"
+                />
+              </div>
+              {evDateFilter && (
+                <button
+                  onClick={() => {
+                    setEvDateFilter("");
+                    evDateRef.current = "";
+                    setMapEvent(null);
+                    setMapGeofence(null);
+                    evPaging.reset();
+                  }}
+                  className="px-3 py-2 text-[13px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Reset
+                </button>
+              )}
+              <button
+                onClick={() => void evPaging.reload()}
+                className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${evPaging.loading ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            </div>
+
+            {evPaging.error ? (
+              <p className="text-[13px] text-red-600 dark:text-red-400 py-3">{evPaging.error}</p>
+            ) : !evPaging.loading && evPaging.rows.length === 0 ? (
+              <EmptyState
+                icon={<AlertTriangle className="w-8 h-8" />}
+                message="Belum ada event untuk perangkat ini."
+              />
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <div className="min-w-[720px] divide-y divide-gray-100 dark:divide-gray-800/60">
+                    <div className="grid grid-cols-12 gap-2 text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium pb-2 px-1">
+                      <span className="col-span-2">Waktu</span>
+                      <span className="col-span-3">Tipe</span>
+                      <span className="col-span-7">Pesan</span>
+                    </div>
+
+                    {evPaging.loading
+                      ? Array.from({ length: 5 }).map((_, i) => (
+                          <div key={`ev-sk-${i}`} className="grid grid-cols-12 items-center gap-2 py-3 px-1">
+                            <span className="col-span-2">
+                              <span className="block h-3.5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+                            </span>
+                            <span className="col-span-3">
+                              <span className="block h-3.5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+                            </span>
+                            <span className="col-span-7">
+                              <span className="block h-3.5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+                            </span>
+                          </div>
+                        ))
+                      : evPaging.rows.map((ev) => {
+                          const geo = isGeofenceEvent(ev);
+                          const selected = mapEvent?.event_id === ev.event_id;
+                          return (
+                            <div
+                              key={ev.event_id}
+                              role={geo ? "button" : undefined}
+                              tabIndex={geo ? 0 : undefined}
+                              onClick={geo ? () => void openEventMap(ev) : undefined}
+                              onKeyDown={
+                                geo
+                                  ? (e) => {
+                                      if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        void openEventMap(ev);
+                                      }
+                                    }
+                                  : undefined
+                              }
+                              title={geo ? "Lihat area geofence di peta" : undefined}
+                              className={`grid grid-cols-12 items-center gap-2 py-2.5 px-1 -mx-1 rounded-lg transition-colors ${
+                                geo
+                                  ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/40 focus:outline-none focus:ring-2 focus:ring-[#2964e7]/30 group"
+                                  : ""
+                              } ${selected ? "bg-[#2964e7]/5 dark:bg-[#2964e7]/10" : ""}`}
+                            >
+                              <span className="col-span-2 text-[12px] text-gray-500 dark:text-gray-400">
+                                {formatDateTime(ev.event_time)}
+                              </span>
+                              <span className="col-span-3 flex items-center gap-1.5 min-w-0">
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium shrink-0 ${toneClasses(
+                                    eventTone(ev.event_type),
+                                  )}`}
+                                >
+                                  {ev.event_type === "geofenceEnter" ? (
+                                    <LogIn className="w-3 h-3" />
+                                  ) : ev.event_type === "geofenceExit" ? (
+                                    <LogOut className="w-3 h-3" />
+                                  ) : null}
+                                  {eventTypeLabel(ev.event_type)}
+                                </span>
+                                {geo && (
+                                  <MapPinned
+                                    className={`w-4 h-4 shrink-0 transition-colors ${
+                                      eventPoint(ev).lat !== null
+                                        ? selected
+                                          ? "text-[#2964e7]"
+                                          : "text-gray-400 group-hover:text-[#2964e7] dark:text-gray-500 dark:group-hover:text-[#2964e7]"
+                                        : "text-gray-200 dark:text-gray-700"
+                                    }`}
+                                  />
+                                )}
+                              </span>
+                              <span
+                                className="col-span-7 text-[12px] text-gray-500 dark:text-gray-400 truncate"
+                                title={ev.message}
+                              >
+                                {ev.message || "-"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                  </div>
+                </div>
+
+                {/* Pagination */}
+                <div className="mt-2 -mx-5 -mb-5">
+                  <PaginationBar
+                    page={evPaging.page}
+                    limit={ADMIN_PAGE_LIMIT}
+                    canPrev={evPaging.page > 1}
+                    canNext={evPaging.hasNext}
+                    loading={evPaging.loading}
+                    maxVisitedPage={evPaging.maxVisitedPage}
+                    onPrev={evPaging.goPrev}
+                    onNext={evPaging.goNext}
+                    onPageJump={evPaging.goPage}
+                  />
+                </div>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div className="relative">
+                <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                <input
+                  type="date"
+                  value={posDateFilter}
+                  onChange={(e) => {
+                    setPosDateFilter(e.target.value);
+                    posDateRef.current = e.target.value;
+                    posPaging.reset();
+                  }}
+                  className="pl-8 pr-3 py-2 text-[13px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2964e7]/30"
+                />
+              </div>
+              {posDateFilter && (
+                <button
+                  onClick={() => {
+                    setPosDateFilter("");
+                    posDateRef.current = "";
+                    posPaging.reset();
+                  }}
+                  className="px-3 py-2 text-[13px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Reset
+                </button>
+              )}
+              <button
+                onClick={() => void posPaging.reload()}
+                className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${posPaging.loading ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            </div>
+
+            {posPaging.error ? (
+              <p className="text-[13px] text-red-600 dark:text-red-400 py-3">{posPaging.error}</p>
+            ) : !posPaging.loading && posPaging.rows.length === 0 ? (
+              <EmptyState
+                icon={<History className="w-8 h-8" />}
+                message="Belum ada log posisi untuk perangkat ini."
+              />
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <div className="min-w-[760px] divide-y divide-gray-100 dark:divide-gray-800/60">
+                    <div className="grid grid-cols-12 gap-2 text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium pb-2 px-1">
+                      <span className="col-span-3">Waktu</span>
+                      <span className="col-span-3">Koordinat</span>
+                      <span className="col-span-2">Alamat</span>
+                      <span className="col-span-1 text-right">Kecepatan</span>
+                      <span className="col-span-1 text-right">Akurasi</span>
+                      <span className="col-span-1 text-center">Satelit</span>
+                      <span className="col-span-1 text-center">Ignition</span>
+                    </div>
+
+                    {posPaging.loading
+                      ? Array.from({ length: 5 }).map((_, i) => (
+                          <div key={`pos-sk-${i}`} className="grid grid-cols-12 items-center gap-2 py-3 px-1">
+                            <span className="col-span-3">
+                              <span className="block h-3.5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+                            </span>
+                            <span className="col-span-3">
+                              <span className="block h-3.5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+                            </span>
+                            <span className="col-span-2">
+                              <span className="block h-3.5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+                            </span>
+                            <span className="col-span-1">
+                              <span className="block h-3.5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+                            </span>
+                            <span className="col-span-1">
+                              <span className="block h-3.5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+                            </span>
+                            <span className="col-span-1">
+                              <span className="block h-3.5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+                            </span>
+                            <span className="col-span-1">
+                              <span className="block h-3.5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+                            </span>
+                          </div>
+                        ))
+                      : posPaging.rows.map((ph) => {
+                          const ignitionOn = ph.ignition === 1;
+                          const ignitionOff = ph.ignition === 0;
+                          return (
+                            <div
+                              key={ph.id}
+                              className="grid grid-cols-12 items-center gap-2 py-2.5 px-1 -mx-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+                            >
+                              <span className="col-span-3 text-[12px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                {formatDateTimeSec(ph.created_at || ph.device_time)}
+                              </span>
+                              <span className="col-span-3 text-[12px] font-mono text-gray-900 dark:text-white truncate">
+                                {ph.latitude.toFixed(6)}, {ph.longitude.toFixed(6)}
+                              </span>
+                              <span className="col-span-2 text-[12px] text-gray-500 dark:text-gray-400 truncate" title={ph.address || ""}>
+                                {ph.address || "-"}
+                              </span>
+                              <span className="col-span-1 text-[12px] text-right text-gray-700 dark:text-gray-300">
+                                {ph.speed.toFixed(1)}
+                              </span>
+                              <span className="col-span-1 text-[12px] text-right text-gray-500 dark:text-gray-400">
+                                {ph.accuracy.toFixed(0)}
+                              </span>
+                              <span className="col-span-1 text-[12px] text-center text-gray-500 dark:text-gray-400">
+                                {ph.satellites}
+                              </span>
+                              <span className="col-span-1 flex justify-center">
+                                <span
+                                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+                                    ignitionOn
+                                      ? "bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400"
+                                      : ignitionOff
+                                        ? "bg-gray-100 text-gray-500 dark:bg-gray-700/40 dark:text-gray-400"
+                                        : "bg-gray-50 text-gray-400 dark:bg-gray-800/40"
+                                  }`}
+                                >
+                                  {ignitionOn ? "ON" : ignitionOff ? "OFF" : "-"}
+                                </span>
+                              </span>
+                            </div>
+                          );
+                        })}
+                  </div>
+                </div>
+
+                {/* Pagination */}
+                <div className="mt-2 -mx-5 -mb-5">
+                  <PaginationBar
+                    page={posPaging.page}
+                    limit={ADMIN_PAGE_LIMIT}
+                    canPrev={posPaging.page > 1}
+                    canNext={posPaging.hasNext}
+                    loading={posPaging.loading}
+                    maxVisitedPage={posPaging.maxVisitedPage}
+                    onPrev={posPaging.goPrev}
+                    onNext={posPaging.goNext}
+                    onPageJump={posPaging.goPage}
+                  />
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </Section>
+
       {cmdDrawerOpen && (
         <div
           className="fixed inset-0 z-50 flex"
@@ -1632,6 +2194,27 @@ export default function GpsDetailPage() {
         centerLat={position?.latitude}
         centerLng={position?.longitude}
         onSaved={() => void load()}
+      />
+
+      {/* ---- Modal peta event geofence (sama seperti halaman detail geofence) ---- */}
+      <GeofenceEventMapModal
+        open={!!mapEvent}
+        onClose={() => {
+          setMapEvent(null);
+          setMapGeofence(null);
+        }}
+        geofence={mapGeofence}
+        event={
+          mapEvent
+            ? {
+                event_type: mapEvent.event_type,
+                event_time: mapEvent.event_time,
+                device_id: mapEvent.device_id,
+                message: mapEvent.message,
+                ...eventPoint(mapEvent),
+              }
+            : null
+        }
       />
 
       {/* ---- Modal Tambah Supir ---- */}

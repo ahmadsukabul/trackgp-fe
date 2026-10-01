@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ApiResponse } from "../lib/api";
 
-export const ADMIN_PAGE_LIMIT = 20;
+export const ADMIN_PAGE_LIMIT = 30;
 
 /**
  * useKeysetPaging — paging keyset ala Terachat untuk halaman admin.
@@ -50,10 +50,16 @@ export function useKeysetPaging<T>({
     setLoading(true);
     setError(null);
 
-    const res = await fetchRef.current({ last_id: lastID, limit: ADMIN_PAGE_LIMIT });
+    // Minta limit+1 baris: satu baris ekstra hanya dipakai untuk memastikan
+    // masih ada halaman berikutnya. Tanpa ini, halaman terakhir yang isinya pas
+    // (mis. tepat 20 baris) akan tetap menyalakan tombol Next dan halaman
+    // berikutnya jadi kosong.
+    const res = await fetchRef.current({ last_id: lastID, limit: ADMIN_PAGE_LIMIT + 1 });
     if (res.status === 1 && Array.isArray(res.data)) {
-      const data = res.data;
-      const nextHasNext = data.length >= ADMIN_PAGE_LIMIT;
+      const raw = res.data;
+      const nextHasNext = raw.length > ADMIN_PAGE_LIMIT;
+      const data = nextHasNext ? raw.slice(0, ADMIN_PAGE_LIMIT) : raw;
+      // Cursor = id baris terakhir yang benar-benar ditampilkan (bukan baris probe).
       const nextCursor = data.length > 0 ? Number((data[data.length - 1] as { id?: number }).id ?? 0) : lastID;
 
       cache.current.set(targetPage, { lastID: nextCursor, rows: data, hasNext: nextHasNext });

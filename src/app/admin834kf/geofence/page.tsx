@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { adminFetch, getApiErrorMessage } from "../lib/api";
 import { DataTable, Column, StatusBadge, Modal, FormField, Input, Select } from "../components/data-table";
 import { useKeysetPaging, ADMIN_PAGE_LIMIT } from "../lib/use-keyset-paging";
@@ -8,6 +9,7 @@ import { Edit2, Map, Trash2 } from "lucide-react";
 
 type Geofence = {
   id: number;
+  geofence_id: string;
   bisnis_id: string;
   name: string;
   description: string;
@@ -17,8 +19,10 @@ type Geofence = {
   radius: number;
   polygon_coords: string;
   color: string;
+  min_fixes: number;
   status: number;
   created_at: string;
+  updated_at?: string;
 };
 
 type GeofenceForm = {
@@ -32,6 +36,7 @@ type GeofenceForm = {
   radius: string;
   polygon_coords: string;
   color: string;
+  min_fixes: string;
   status: string;
 };
 
@@ -45,6 +50,7 @@ const emptyForm: GeofenceForm = {
   radius: "",
   polygon_coords: "",
   color: "#FF0000",
+  min_fixes: "2",
   status: "1",
 };
 
@@ -109,6 +115,7 @@ export default function GeofencePage() {
       radius: g.radius ? String(g.radius) : "",
       polygon_coords: g.polygon_coords || "",
       color: g.color || "#FF0000",
+      min_fixes: String(g.min_fixes ?? 2),
       status: String(g.status ?? 1),
     });
     setError(null);
@@ -123,6 +130,7 @@ export default function GeofencePage() {
       name: form.name,
       description: form.description,
       color: form.color,
+      min_fixes: Number(form.min_fixes) || 2,
     };
     if (form.id) {
       payload.status = Number(form.status);
@@ -160,7 +168,9 @@ export default function GeofencePage() {
     const res = await adminFetch(`/geofence/${deleteId}`, { method: "DELETE" });
     setDeleting(false);
     setDeleteId(null);
-    if (res.status === 1) await paging.reload();
+    if (res.status === 1) {
+      await paging.reload();
+    }
   }
 
   const columns: Column<Geofence>[] = [
@@ -168,16 +178,25 @@ export default function GeofencePage() {
       key: "id",
       header: "ID",
       className: "w-16",
-      render: (g) => <span className="text-gray-400 text-[12px]">#{g.id}</span>,
+      render: (g) => (
+        <Link
+          href={`/admin834kf/geofence/${g.geofence_id}`}
+          className="text-gray-400 hover:text-[#2964e7] text-[12px] transition-colors"
+        >
+          #{g.id}
+        </Link>
+      ),
     },
     {
       key: "name",
       header: "Nama Geofence",
       render: (g) => (
-        <div>
-          <p className="font-medium text-gray-900 dark:text-white">{g.name}</p>
-          <p className="text-[12px] text-gray-500">{g.description || "-"}</p>
-        </div>
+        <Link href={`/admin834kf/geofence/${g.geofence_id}`} className="block group">
+          <p className="font-medium text-[#2964e7] group-hover:text-[#2150c5] transition-colors">{g.name}</p>
+          <p className="text-[12px] text-[#2964e7]/70 font-mono group-hover:text-[#2964e7]/90 transition-colors">
+            {g.geofence_id}
+          </p>
+        </Link>
       ),
     },
     {
@@ -306,6 +325,9 @@ export default function GeofencePage() {
               )}
             </>
           )}
+          <FormField label="Minimal Fix Berturut (anti log palsu)">
+            <Input value={form.min_fixes} onChange={(v) => setForm({ ...form, min_fixes: v })} placeholder="2" />
+          </FormField>
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Warna">
               <Input value={form.color} onChange={(v) => setForm({ ...form, color: v })} placeholder="#FF0000" />

@@ -2,9 +2,7 @@
 
 import { adminFetch } from "../lib/api";
 import { DataTable, Column } from "../components/data-table";
-import { useKeysetPaging } from "../lib/use-keyset-paging";
-
-const POSITION_PAGE_LIMIT = 50;
+import { useKeysetPaging, ADMIN_PAGE_LIMIT } from "../lib/use-keyset-paging";
 
 type Position = {
   id: number;
@@ -93,7 +91,7 @@ export default function PositionsPage() {
       columns={columns}
       data={paging.rows}
       loading={paging.loading}
-      pageSize={POSITION_PAGE_LIMIT}
+      pageSize={ADMIN_PAGE_LIMIT}
       currentPage={paging.page}
       hasNext={paging.hasNext}
       maxVisitedPage={paging.maxVisitedPage}

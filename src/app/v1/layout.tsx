@@ -49,6 +49,7 @@ const sidebarGroups: SidebarGroup[] = [
   {
     title: "MANAJEMEN",
     items: [
+      { name: "Geofence", href: "/v1/geofence", menu: MENU.geofence, icon: MapPin },
       { name: "Tim", href: "/v1/team", menu: MENU.team, icon: Users },
       { name: "Pengaturan", href: "/v1/pengaturan", menu: MENU.bisnis, icon: Settings },
     ],
