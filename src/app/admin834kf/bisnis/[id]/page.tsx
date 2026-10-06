@@ -26,7 +26,7 @@ import { Section, StatCard, EmptyState } from "../../components/section";
 import { StatusBadge, StatusSwitch } from "../../components/data-table";
 import { useToast, Toast } from "../../components/toast";
 import GeofenceMapModal, { type GeofenceData } from "../../components/geofence-map-modal";
-import { formatDateTimeSec, formatDate, isPastDate } from "@/lib/format-date";
+import { formatDateTimeSec } from "@/lib/format-date";
 
 // ---- Tipe data ---------------------------------------------------------------
 
@@ -39,7 +39,6 @@ type Bisnis = {
   address: string;
   reseller_id: string;
   device_limit: number;
-  expired_at: string;
   status: number;
   created_at: string;
   updated_at?: string;
@@ -117,12 +116,7 @@ function CountBadge({ count, limit }: { count: number; limit: number }) {
   );
 }
 
-function isExpired(dateStr: string): boolean {
-  return isPastDate(dateStr);
-}
-
 const RELATED_LIMIT = 100;
-
 // ---- Halaman -----------------------------------------------------------------
 
 export default function BisnisDetailPage() {
@@ -346,22 +340,6 @@ export default function BisnisDetailPage() {
           </div>
           <div className="grid grid-cols-2 gap-x-6 px-3 py-2.5">
             <BisnisInfoCell label="Limit GPS" value={bisnis.device_limit ?? "-"} />
-            <BisnisInfoCell
-              label="Expired"
-              custom={
-                <span className="inline-flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExpired(bisnis.expired_at) ? "bg-red-500" : "bg-green-500"}`} />
-                  <span className={isExpired(bisnis.expired_at) ? "text-red-600 dark:text-red-400 font-medium" : ""}>
-                    {bisnis.expired_at ? formatDate(bisnis.expired_at) : "-"}
-                  </span>
-                  {bisnis.expired_at && isExpired(bisnis.expired_at) && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400">
-                      Expired
-                    </span>
-                  )}
-                </span>
-              }
-            />
           </div>
           <div className="grid grid-cols-2 gap-x-6 px-3 py-2.5">
             <BisnisInfoCell label="Dibuat" value={formatDateTimeSec(bisnis.created_at)} />

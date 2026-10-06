@@ -6,7 +6,8 @@ import { adminFetch, getApiErrorMessage } from "../lib/api";
 import { DataTable, Column, Modal, FormField, Input } from "../components/data-table";
 import { useKeysetPaging, ADMIN_PAGE_LIMIT } from "../lib/use-keyset-paging";
 import { useAutoRefresh } from "../lib/use-auto-refresh";
-import { formatDateTimeSec, parseDateParts } from "@/lib/format-date";
+import { formatDate, formatDateTimeSec, parseDateParts } from "@/lib/format-date";
+import { expiryDaysLeft, expiryStatus } from "@/lib/expiry";
 import {
   BatteryFull,
   BatteryLow,
@@ -44,6 +45,8 @@ type Gps = {
   signal_level: number;
   last_address: string;
   speed_threshold: number;
+  price: number;
+  expired_at: string;
   status: string;
   last_seen_at: string;
   created_at: string;
@@ -61,6 +64,8 @@ type GpsForm = {
   sim_number: string;
   phone_number: string;
   speed_threshold: string;
+  price: string;
+  expired_at: string;
 };
 
 const emptyForm: GpsForm = {
@@ -74,6 +79,8 @@ const emptyForm: GpsForm = {
   sim_number: "",
   phone_number: "",
   speed_threshold: "0",
+  price: "0",
+  expired_at: "",
 };
 
 const STATUS_OPTIONS = [
@@ -210,6 +217,34 @@ function formatRelative(value: string): string {
   return `${Math.floor(months / 12)} tahun yang lalu`;
 }
 
+/** Sel status langganan device (kolom "Berakhir"). */
+function ExpiryCell({ expiredAt }: { expiredAt?: string }) {
+  if (!expiredAt) return <span className="text-[12px] text-gray-400">-</span>;
+  const status = expiryStatus(expiredAt);
+  const days = expiryDaysLeft(expiredAt);
+  const meta: Record<string, { label: string; cls: string }> = {
+    none: { label: "Belum diatur", cls: "text-gray-400" },
+    active: { label: "Aktif", cls: "text-green-600 dark:text-green-400" },
+    soon: { label: "Segera", cls: "text-amber-600 dark:text-amber-400" },
+    grace: { label: "Tenggang", cls: "text-amber-600 dark:text-amber-400" },
+    blocked: { label: "Berakhir", cls: "text-red-600 dark:text-red-400" },
+  };
+  const m = meta[status] ?? meta.none;
+  const hint = days === null ? "" : days >= 0 ? `${days} hari lagi` : `${Math.abs(days)} hari lalu`;
+  return (
+    <div className="leading-tight" title={hint}>
+      <p className="text-[13px]">{formatDate(expiredAt)}</p>
+      <p className={`text-[11px] font-medium ${m.cls}`}>{m.label}</p>
+    </div>
+  );
+}
+
+const IDR = new Intl.NumberFormat("id-ID", {
+  style: "currency",
+  currency: "IDR",
+  maximumFractionDigits: 0,
+});
+
 /** Interval auto-refresh daftar device (ms). */
 const AUTO_REFRESH_MS = 15000;
 
@@ -274,6 +309,8 @@ export default function GpsPage() {
       sim_number: g.sim_number || "",
       phone_number: g.phone_number || "",
       speed_threshold: String(g.speed_threshold ?? 0),
+      price: String(g.price ?? 0),
+      expired_at: (g.expired_at || "").slice(0, 10),
     });
     setError(null);
     setModalOpen(true);
@@ -293,6 +330,8 @@ export default function GpsPage() {
     };
     if (form.id) {
       payload.speed_threshold = form.speed_threshold ? Number(form.speed_threshold) : 0;
+      payload.price = form.price ? Number(form.price) : 0;
+      payload.expired_at = form.expired_at;
       const res = await adminFetch(`/device/${form.device_id}`, { method: "PUT", body: payload });
       if (res.status !== 1) {
         setError(getApiErrorMessage(res, "Gagal update"));
@@ -302,6 +341,8 @@ export default function GpsPage() {
     } else {
       payload.bisnis_id = form.bisnis_id;
       payload.unique_id = form.unique_id;
+      if (form.price) payload.price = Number(form.price);
+      if (form.expired_at) payload.expired_at = form.expired_at;
       const res = await adminFetch("/device", { method: "POST", body: payload });
       if (res.status !== 1) {
         setError(getApiErrorMessage(res, "Gagal simpan"));
@@ -389,6 +430,20 @@ export default function GpsPage() {
       key: "protocol",
       header: "Protocol",
       render: (g) => <span className="text-[13px]">{g.protocol || "-"}</span>,
+    },
+    {
+      key: "price",
+      header: "Harga",
+      render: (g) => (
+        <span className="text-[13px] tabular-nums">
+          {g.price > 0 ? `${IDR.format(g.price)}/bln` : <span className="text-gray-400">-</span>}
+        </span>
+      ),
+    },
+    {
+      key: "expired_at",
+      header: "Berakhir",
+      render: (g) => <ExpiryCell expiredAt={g.expired_at} />,
     },
     {
       key: "last_seen_at",
@@ -495,6 +550,14 @@ export default function GpsPage() {
                 <Input value={form.speed_threshold} onChange={(v) => setForm({ ...form, speed_threshold: v })} placeholder="0 = nonaktif" />
               </FormField>
             )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Harga langganan (Rp/bulan)">
+              <Input value={form.price} onChange={(v) => setForm({ ...form, price: v })} placeholder="0" />
+            </FormField>
+            <FormField label="Tanggal berakhir">
+              <Input value={form.expired_at} onChange={(v) => setForm({ ...form, expired_at: v })} placeholder="YYYY-MM-DD" />
+            </FormField>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 text-[13px] font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">

@@ -12,6 +12,7 @@ export const MENU = {
   report: "report",
   command: "command",
   log: "log",
+  invoice: "invoice",
 } as const;
 
 export type MenuKey = (typeof MENU)[keyof typeof MENU];
@@ -30,6 +31,7 @@ export const MENU_LABELS: Record<string, string> = {
   [MENU.report]: "Laporan",
   [MENU.command]: "Perintah",
   [MENU.log]: "Log Aktivitas",
+  [MENU.invoice]: "Langganan & Invoice",
 };
 
 export const ALL_MENU_KEYS = Object.keys(MENU_LABELS);

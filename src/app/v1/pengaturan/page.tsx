@@ -7,7 +7,6 @@ import { MENU } from "../lib/menu";
 import { ALL_MENU_KEYS, MENU_LABELS } from "../lib/menu";
 import { getApiErrorMessage } from "../lib/api";
 import { bisnisDetail, type Bisnis } from "../lib/client";
-import { formatDate } from "@/lib/format-date";
 
 export default function PengaturanPage() {
   const { can, isOwner, menuKeys } = useBusiness();
@@ -129,7 +128,7 @@ export default function PengaturanPage() {
               <div>
                 <label className={labelCls} style={labelStyle}>Status bisnis</label>
                 <input
-                  value={data?.status === 1 ? "Aktif" : `Nonaktif${data?.expired_at ? ` · ${formatDate(data.expired_at)}` : ""}`}
+                  value={data?.status === 1 ? "Aktif" : "Nonaktif"}
                   disabled
                   className={inputCls}
                   style={inputStyle}

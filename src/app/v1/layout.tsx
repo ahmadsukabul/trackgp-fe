@@ -16,6 +16,7 @@ import {
   LogOut,
   MapPin,
   ChevronDown,
+  ReceiptText,
 } from "lucide-react";
 
 import { clearAuthData, getAuthToken } from "./lib/api";
@@ -50,6 +51,7 @@ const sidebarGroups: SidebarGroup[] = [
     title: "MANAJEMEN",
     items: [
       { name: "Geofence", href: "/v1/geofence", menu: MENU.geofence, icon: MapPin },
+      { name: "Langganan", href: "/v1/invoice", menu: MENU.invoice, icon: ReceiptText },
       { name: "Tim", href: "/v1/team", menu: MENU.team, icon: Users },
       { name: "Pengaturan", href: "/v1/pengaturan", menu: MENU.bisnis, icon: Settings },
     ],

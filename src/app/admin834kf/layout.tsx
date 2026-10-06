@@ -16,6 +16,7 @@ import {
   Menu,
   ChevronLeft,
   Camera,
+  ReceiptText,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getAdminToken, clearAdminToken } from "./lib/api";
@@ -58,6 +59,10 @@ const sidebarGroups: SidebarGroup[] = [
       { name: "Posisi", href: "/admin834kf/positions", icon: MapPin },
       { name: "Geofence", href: "/admin834kf/geofence", icon: Route },
     ],
+  },
+  {
+    title: "KEUANGAN",
+    items: [{ name: "Invoice", href: "/admin834kf/invoice", icon: ReceiptText }],
   },
 ];
 

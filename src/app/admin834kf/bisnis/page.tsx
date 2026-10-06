@@ -16,7 +16,6 @@ type Bisnis = {
   address: string;
   reseller_id: string;
   device_limit: number;
-  expired_at: string;
   status: number;
   created_at: string;
 };

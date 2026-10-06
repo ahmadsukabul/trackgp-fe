@@ -51,7 +51,7 @@ import { StatusBadge } from "../../components/data-table";
 import { PaginationBar } from "../../components/pagination";
 import { useKeysetPaging, ADMIN_PAGE_LIMIT } from "../../lib/use-keyset-paging";
 import { useAutoRefresh } from "../../lib/use-auto-refresh";
-import { formatDateTimeSec, nowLocalString } from "@/lib/format-date";
+import { formatDate, formatDateTimeSec, nowLocalString } from "@/lib/format-date";
 import GeofenceMapModal, { type GeofenceData } from "../../components/geofence-map-modal";
 import GeofenceEventMapModal from "../../components/geofence-event-map-modal";
 import GeofenceAreaMap from "../../components/geofence-area-map";
@@ -60,6 +60,12 @@ import DateInput from "../../components/date-input";
 import AutoRefreshBadge from "../../components/auto-refresh-badge";
 
 // ---- Tipe data dari BE ------------------------------------------------------
+
+const IDR = new Intl.NumberFormat("id-ID", {
+  style: "currency",
+  currency: "IDR",
+  maximumFractionDigits: 0,
+});
 
 type Gps = {
   id: number;
@@ -82,6 +88,8 @@ type Gps = {
   signal_level: number;
   last_address: string;
   speed_threshold: number;
+  price: number;
+  expired_at: string;
   defense_state: number;
   last_seen_at: string;
   created_at: string;
@@ -1286,6 +1294,16 @@ export default function GpsDetailPage() {
               label="Batas Kecepatan"
               value={gps.speed_threshold > 0 ? `${gps.speed_threshold.toFixed(0)} km/h` : null}
               fallback="Nonaktif"
+            />
+            <DevInfoCell
+              label="Harga Langganan"
+              value={gps.price > 0 ? `${IDR.format(gps.price)}/bulan` : null}
+              fallback="Belum diatur"
+            />
+            <DevInfoCell
+              label="Berakhir"
+              value={gps.expired_at ? formatDate(gps.expired_at) : null}
+              fallback="Belum diatur"
             />
             <DevInfoCell
               label="Defense"

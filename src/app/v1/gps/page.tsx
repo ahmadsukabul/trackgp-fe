@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import CrudPage, { StatusBadge, type Column } from "../components/CrudPage";
 import ModalForm, { type Field } from "../components/ModalForm";
 import ConfirmModal from "../components/ConfirmModal";
 import { useBusiness } from "../lib/BusinessContext";
 import { MENU } from "../lib/menu";
 import { getApiErrorMessage } from "../lib/api";
-import { formatDateTimeSec } from "@/lib/format-date";
+import { formatDate, formatDateTimeSec } from "@/lib/format-date";
+import { expiryDaysLeft, expiryStatus, type ExpiryStatus } from "@/lib/expiry";
 import {
   deviceList,
   deviceCreate,
@@ -28,9 +30,40 @@ const PROTOCOLS = ["gt06", "tk103", "teltonika", "queclink", "others"].map((p) =
 
 type FormState = Record<string, string>;
 
+/** Label + warna status langganan device untuk kolom "Berakhir". */
+const EXPIRY_META: Record<ExpiryStatus, { label: string; color: string }> = {
+  none: { label: "Belum diatur", color: "var(--v1-ink-faint)" },
+  active: { label: "Aktif", color: "var(--v1-success, #16a34a)" },
+  soon: { label: "Segera berakhir", color: "#d97706" },
+  grace: { label: "Masa tenggang", color: "#d97706" },
+  blocked: { label: "Berakhir", color: "var(--v1-danger)" },
+};
+
+function ExpiryCell({ expiredAt }: { expiredAt?: string }) {
+  if (!expiredAt) return <span style={{ color: "var(--v1-ink-faint)" }}>-</span>;
+  const status = expiryStatus(expiredAt);
+  const meta = EXPIRY_META[status];
+  const days = expiryDaysLeft(expiredAt);
+  const hint =
+    days === null
+      ? ""
+      : days >= 0
+        ? `${days} hari lagi`
+        : `${Math.abs(days)} hari lalu`;
+  return (
+    <div className="leading-tight">
+      <p className="text-[13px]" style={{ color: "var(--v1-ink)" }}>{formatDate(expiredAt)}</p>
+      <p className="text-[11px] font-medium" style={{ color: meta.color }} title={hint}>
+        {meta.label}
+      </p>
+    </div>
+  );
+}
+
 export default function GpsPage() {
   const { can } = useBusiness();
   const allowed = can(MENU.gps);
+  const router = useRouter();
 
   const [rows, setRows] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,6 +227,11 @@ export default function GpsPage() {
     { key: "sim_number", label: "SIM", render: (d) => d.sim_number || "-" },
     { key: "status", label: "Status", render: (d) => <StatusBadge value={d.status} /> },
     {
+      key: "expired_at",
+      label: "Berakhir",
+      render: (d) => <ExpiryCell expiredAt={d.expired_at} />,
+    },
+    {
       key: "last_seen_at",
       label: "Terakhir online",
       render: (d) => <span style={{ color: "var(--v1-ink-faint)" }}>{d.last_seen_at ? formatDateTimeSec(d.last_seen_at) : "-"}</span>,
@@ -250,13 +288,24 @@ export default function GpsPage() {
         onEdit={openEdit}
         onDelete={(d) => setToDelete(d)}
         extraActions={(d) => (
-          <button
-            onClick={() => openCameras(d)}
-            className="px-2.5 py-1.5 text-[12px] font-semibold rounded-lg transition-colors"
-            style={{ color: "var(--v1-ink-muted)" }}
-          >
-            Kamera
-          </button>
+          <>
+            {can(MENU.invoice) && (
+              <button
+                onClick={() => router.push(`/v1/invoice?device_id=${encodeURIComponent(d.device_id)}`)}
+                className="px-2.5 py-1.5 text-[12px] font-semibold rounded-lg transition-colors"
+                style={{ color: "var(--v1-accent)" }}
+              >
+                Langganan
+              </button>
+            )}
+            <button
+              onClick={() => openCameras(d)}
+              className="px-2.5 py-1.5 text-[12px] font-semibold rounded-lg transition-colors"
+              style={{ color: "var(--v1-ink-muted)" }}
+            >
+              Kamera
+            </button>
+          </>
         )}
       />
 

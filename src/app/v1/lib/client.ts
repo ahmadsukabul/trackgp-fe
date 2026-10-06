@@ -24,7 +24,6 @@ export interface Bisnis {
   reseller_id?: string;
   device_limit: number;
   status: number;
-  expired_at?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -83,6 +82,8 @@ export interface Device {
   course: number;
   speed_threshold: number;
   defense_state?: number;
+  price?: number;
+  expired_at?: string;
   last_seen_at: string;
   created_at?: string;
   updated_at?: string;
@@ -195,6 +196,59 @@ export interface DashboardStats {
   total_vehicles: number;
   total_users: number;
   total_drivers: number;
+}
+
+/** MetodePembayaran — channel pembayaran (QRIS / VA / E-Wallet). */
+export interface MetodePembayaran {
+  id?: number;
+  metode_id: string;
+  label: string;
+  icon: string;
+  kategori: string;
+  kode_vendor: string;
+  admin_flat: number;
+  admin_persen: number;
+  status: number;
+  min: number;
+  max: number;
+  sort_order: number;
+}
+
+/** Invoice — tagihan langganan untuk satu device. */
+export interface Invoice {
+  id?: number;
+  invoice_id: string;
+  bisnis_id: string;
+  device_id: string;
+  kategori: string; // register | perpanjang
+  months: number;
+  amount: number;
+  biaya_admin: number;
+  total_transfer: number;
+  due_date: string;
+  status: string; // pending | paid | overdue | cancelled
+  metode_id: string;
+  link_pay: string;
+  reference: string;
+  nomor_va: string;
+  qr_link: string;
+  qr_string: string;
+  paid_at: string;
+  created_at: string;
+  updated_at: string;
+  device?: Device | null;
+  bisnis?: Bisnis | null;
+}
+
+/** Hasil pembuatan order pembayaran di gateway. */
+export interface PaymentResult {
+  invoice_id: string;
+  link_pay: string;
+  nomor_va: string;
+  qr_link: string;
+  qr_string: string;
+  total_bayar: number;
+  reference: string;
 }
 
 /* ============ Auth ============ */
@@ -606,5 +660,37 @@ export function geofenceEvents(payload: {
   limit?: number;
 } = {}): Promise<ApiResponse<GPSEvent[]>> {
   return apiFetch("/client/geofence/events", payload);
+}
+
+/* ============ Invoice / Langganan ============ */
+// POST /client/invoice/list
+export function invoiceList(params: {
+  device_id?: string;
+  status?: string;
+  last_id?: number;
+  limit?: number;
+} = {}): Promise<ApiResponse<Invoice[]>> {
+  return apiFetch("/client/invoice/list", { limit: LIST_LIMIT, ...params });
+}
+
+// POST /client/invoice/detail
+export function invoiceDetail(invoiceId: string): Promise<ApiResponse<Invoice>> {
+  return apiFetch("/client/invoice/detail", { invoice_id: invoiceId });
+}
+
+// POST /client/invoice/request-payment
+export function invoiceRequestPayment(
+  invoiceId: string,
+  metodeId: string,
+): Promise<ApiResponse<PaymentResult>> {
+  return apiFetch("/client/invoice/request-payment", {
+    invoice_id: invoiceId,
+    metode_id: metodeId,
+  });
+}
+
+// POST /client/invoice/metode-list
+export function metodePembayaranList(): Promise<ApiResponse<MetodePembayaran[]>> {
+  return apiFetch("/client/invoice/metode-list", {});
 }
 
