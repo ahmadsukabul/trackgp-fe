@@ -3,14 +3,17 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { adminFetch, getApiErrorMessage } from "../lib/api";
-import { DataTable, Column, StatusBadge, Modal, FormField, Input, Select } from "../components/data-table";
+import { DataTable, Column, Modal, StatusSwitch } from "../components/data-table";
 import { useKeysetPaging, ADMIN_PAGE_LIMIT } from "../lib/use-keyset-paging";
+import GeofenceMapModal, { type GeofenceData } from "../components/geofence-map-modal";
+import { useToast, Toast } from "../components/toast";
 import { Edit2, Map, Trash2 } from "lucide-react";
 
 type Geofence = {
   id: number;
   geofence_id: string;
   bisnis_id: string;
+  bisnis?: { bisnis_id: string; name: string };
   name: string;
   description: string;
   area_type: string;
@@ -25,35 +28,6 @@ type Geofence = {
   updated_at?: string;
 };
 
-type GeofenceForm = {
-  id?: number;
-  bisnis_id: string;
-  name: string;
-  description: string;
-  area_type: string;
-  center_lat: string;
-  center_lng: string;
-  radius: string;
-  polygon_coords: string;
-  color: string;
-  min_fixes: string;
-  status: string;
-};
-
-const emptyForm: GeofenceForm = {
-  bisnis_id: "",
-  name: "",
-  description: "",
-  area_type: "polygon",
-  center_lat: "",
-  center_lng: "",
-  radius: "",
-  polygon_coords: "",
-  color: "#FF0000",
-  min_fixes: "2",
-  status: "1",
-};
-
 const STATUS_OPTIONS = [
   { label: "Semua Status", value: "" },
   { label: "Aktif", value: "1" },
@@ -61,12 +35,13 @@ const STATUS_OPTIONS = [
 ];
 
 export default function GeofencePage() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState<GeofenceForm>(emptyForm);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [geoModalOpen, setGeoModalOpen] = useState(false);
+  const [geoEdit, setGeoEdit] = useState<GeofenceData | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  const { toast, showToast } = useToast();
 
   const searchRef = useRef<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState("");
@@ -84,8 +59,6 @@ export default function GeofencePage() {
     },
   });
 
-  const isCircle = form.area_type === "circle";
-
   function handleSearch(filters: Record<string, string>) {
     searchRef.current = filters;
     paging.reset();
@@ -98,68 +71,22 @@ export default function GeofencePage() {
   }
 
   function openAdd() {
-    setForm(emptyForm);
-    setError(null);
-    setModalOpen(true);
+    setGeoEdit(null);
+    setGeoModalOpen(true);
   }
 
   function openEdit(g: Geofence) {
-    setForm({
-      id: g.id,
-      bisnis_id: g.bisnis_id || "",
+    setGeoEdit({
+      geofence_id: g.geofence_id,
       name: g.name,
       description: g.description || "",
       area_type: g.area_type || "polygon",
-      center_lat: g.center_lat ? String(g.center_lat) : "",
-      center_lng: g.center_lng ? String(g.center_lng) : "",
-      radius: g.radius ? String(g.radius) : "",
-      polygon_coords: g.polygon_coords || "",
       color: g.color || "#FF0000",
-      min_fixes: String(g.min_fixes ?? 2),
-      status: String(g.status ?? 1),
+      status: g.status ?? 1,
+      polygon_coords: g.polygon_coords || "",
+      min_fixes: g.min_fixes ?? 2,
     });
-    setError(null);
-    setModalOpen(true);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
-    const payload: Record<string, unknown> = {
-      name: form.name,
-      description: form.description,
-      color: form.color,
-      min_fixes: Number(form.min_fixes) || 2,
-    };
-    if (form.id) {
-      payload.status = Number(form.status);
-      const res = await adminFetch(`/geofence/${form.id}`, { method: "PUT", body: payload });
-      if (res.status !== 1) {
-        setError(getApiErrorMessage(res, "Gagal update"));
-        setSaving(false);
-        return;
-      }
-    } else {
-      payload.bisnis_id = form.bisnis_id;
-      payload.area_type = form.area_type;
-      if (isCircle) {
-        payload.center_lat = form.center_lat ? Number(form.center_lat) : 0;
-        payload.center_lng = form.center_lng ? Number(form.center_lng) : 0;
-        payload.radius = form.radius ? Number(form.radius) : 0;
-      } else {
-        payload.polygon_coords = form.polygon_coords;
-      }
-      const res = await adminFetch("/geofence", { method: "POST", body: payload });
-      if (res.status !== 1) {
-        setError(getApiErrorMessage(res, "Gagal simpan"));
-        setSaving(false);
-        return;
-      }
-    }
-    setSaving(false);
-    setModalOpen(false);
-    await paging.reload();
+    setGeoModalOpen(true);
   }
 
   async function handleDelete() {
@@ -169,7 +96,29 @@ export default function GeofencePage() {
     setDeleting(false);
     setDeleteId(null);
     if (res.status === 1) {
+      showToast("Geofence berhasil dihapus");
       await paging.reload();
+    } else {
+      showToast(getApiErrorMessage(res, "Gagal menghapus geofence"), "error");
+    }
+  }
+
+  // Update status cepat via switch — optimistis, balik kalau gagal.
+  async function toggleStatus(g: Geofence, next: boolean) {
+    const nextStatus = next ? 1 : 0;
+    setTogglingId(g.geofence_id);
+    paging.patchRows((r) => r.geofence_id === g.geofence_id, { status: nextStatus });
+    const res = await adminFetch(`/geofence/${g.geofence_id}`, {
+      method: "PUT",
+      body: { status: nextStatus },
+    });
+    setTogglingId(null);
+    if (res.status === 1) {
+      showToast(next ? "Geofence diaktifkan" : "Geofence dinonaktifkan");
+    } else {
+      // Balikkan ke status semula kalau gagal.
+      paging.patchRows((r) => r.geofence_id === g.geofence_id, { status: g.status });
+      showToast(getApiErrorMessage(res, "Gagal update status"), "error");
     }
   }
 
@@ -200,6 +149,21 @@ export default function GeofencePage() {
       ),
     },
     {
+      key: "bisnis",
+      header: "Bisnis",
+      render: (g) =>
+        g.bisnis_id ? (
+          <Link
+            href={`/admin834kf/bisnis/${g.bisnis_id}`}
+            className="text-[13px] text-[#2964e7] hover:underline"
+          >
+            {g.bisnis?.name || g.bisnis_id}
+          </Link>
+        ) : (
+          <span className="text-[13px] text-gray-400">-</span>
+        ),
+    },
+    {
       key: "area_type",
       header: "Tipe",
       render: (g) => (
@@ -225,7 +189,19 @@ export default function GeofencePage() {
     {
       key: "status",
       header: "Status",
-      render: (g) => <StatusBadge status={g.status} />,
+      render: (g) => (
+        <div className="flex items-center gap-2">
+          <StatusSwitch
+            checked={g.status === 1}
+            loading={togglingId === g.geofence_id}
+            onChange={(next) => void toggleStatus(g, next)}
+            title={g.status === 1 ? "Nonaktifkan" : "Aktifkan"}
+          />
+          <span className={`text-[12px] ${g.status === 1 ? "text-green-600 dark:text-green-400" : "text-gray-400"}`}>
+            {g.status === 1 ? "Aktif" : "Nonaktif"}
+          </span>
+        </div>
+      ),
     },
     {
       key: "actions",
@@ -236,7 +212,7 @@ export default function GeofencePage() {
           <button onClick={() => openEdit(g)} className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors">
             <Edit2 className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => setDeleteId(g.id)} className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+          <button onClick={() => setDeleteId(g.geofence_id)} className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -272,89 +248,19 @@ export default function GeofencePage() {
         onReset={handleReset}
       />
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={form.id ? "Edit Geofence" : "Tambah Geofence"}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="px-3 py-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg text-[13px] text-red-600 dark:text-red-400">
-              {error}
-            </div>
-          )}
-          <FormField label="Nama Geofence" required>
-            <Input value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="Kawasan Pabrik A" />
-          </FormField>
-          <FormField label="Deskripsi">
-            <Input value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Deskripsi area geofence" />
-          </FormField>
-          {!form.id && (
-            <>
-              <FormField label="Bisnis ID" required>
-                <Input value={form.bisnis_id} onChange={(v) => setForm({ ...form, bisnis_id: v })} placeholder="ID bisnis pemilik geofence" />
-              </FormField>
-              <FormField label="Tipe Area">
-                <Select
-                  value={form.area_type}
-                  onChange={(v) => setForm({ ...form, area_type: v })}
-                  options={[
-                    { label: "Polygon", value: "polygon" },
-                    { label: "Circle", value: "circle" },
-                  ]}
-                />
-              </FormField>
-              {isCircle ? (
-                <div className="grid grid-cols-3 gap-3">
-                  <FormField label="Center Lat" required>
-                    <Input value={form.center_lat} onChange={(v) => setForm({ ...form, center_lat: v })} placeholder="-6.200000" />
-                  </FormField>
-                  <FormField label="Center Lng" required>
-                    <Input value={form.center_lng} onChange={(v) => setForm({ ...form, center_lng: v })} placeholder="106.816666" />
-                  </FormField>
-                  <FormField label="Radius (m)" required>
-                    <Input value={form.radius} onChange={(v) => setForm({ ...form, radius: v })} placeholder="500" />
-                  </FormField>
-                </div>
-              ) : (
-                <FormField label="Polygon Coords (JSON)">
-                  <textarea
-                    value={form.polygon_coords}
-                    onChange={(e) => setForm({ ...form, polygon_coords: e.target.value })}
-                    placeholder='[[lat,lng],[lat,lng],...]'
-                    rows={3}
-                    className="w-full px-3 py-2 text-[12px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
-                  />
-                </FormField>
-              )}
-            </>
-          )}
-          <FormField label="Minimal Fix Berturut (anti log palsu)">
-            <Input value={form.min_fixes} onChange={(v) => setForm({ ...form, min_fixes: v })} placeholder="2" />
-          </FormField>
-          <div className="grid grid-cols-2 gap-3">
-            <FormField label="Warna">
-              <Input value={form.color} onChange={(v) => setForm({ ...form, color: v })} placeholder="#FF0000" />
-            </FormField>
-            {form.id && (
-              <FormField label="Status">
-                <Select
-                  value={form.status}
-                  onChange={(v) => setForm({ ...form, status: v })}
-                  options={[
-                    { label: "Aktif", value: "1" },
-                    { label: "Nonaktif", value: "0" },
-                  ]}
-                />
-              </FormField>
-            )}
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 text-[13px] font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-              Batal
-            </button>
-            <button type="submit" disabled={saving || !form.name.trim()} className="px-4 py-2 text-[13px] font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
-              {saving ? "Menyimpan..." : "Simpan"}
-            </button>
-          </div>
-        </form>
-      </Modal>
+      <GeofenceMapModal
+        open={geoModalOpen}
+        onClose={() => {
+          setGeoModalOpen(false);
+          setGeoEdit(null);
+        }}
+        editGeofence={geoEdit}
+        bisnisId=""
+        onSaved={() => {
+          showToast(geoEdit ? "Geofence berhasil diupdate" : "Geofence berhasil dibuat");
+          void paging.reload();
+        }}
+      />
 
       <Modal open={!!deleteId} onClose={() => setDeleteId(null)} title="Hapus Geofence">
         <p className="text-[13px] text-gray-600 dark:text-gray-300 mb-4">
@@ -369,6 +275,8 @@ export default function GeofencePage() {
           </button>
         </div>
       </Modal>
+
+      <Toast toast={toast} />
     </>
   );
 }

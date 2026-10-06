@@ -7,6 +7,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import { useBusiness } from "../lib/BusinessContext";
 import { MENU } from "../lib/menu";
 import { getApiErrorMessage } from "../lib/api";
+import { formatDateTimeSec } from "@/lib/format-date";
 import {
   deviceList,
   deviceCreate,
@@ -195,7 +196,7 @@ export default function GpsPage() {
     {
       key: "last_seen_at",
       label: "Terakhir online",
-      render: (d) => <span style={{ color: "var(--v1-ink-faint)" }}>{d.last_seen_at || "-"}</span>,
+      render: (d) => <span style={{ color: "var(--v1-ink-faint)" }}>{d.last_seen_at ? formatDateTimeSec(d.last_seen_at) : "-"}</span>,
     },
   ];
 

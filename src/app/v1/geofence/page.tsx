@@ -15,6 +15,7 @@ import {
   type GPSEvent,
 } from "../lib/client";
 import { LogIn, LogOut, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { formatDateTimeSec } from "@/lib/format-date";
 
 /** Hitung jumlah titik dari polygon_coords JSON (aman terhadap data rusak). */
 function countPoints(polygonCoords: string): number {
@@ -36,19 +37,6 @@ function fenceName(attributesJson: string): string {
   } catch {
     return "-";
   }
-}
-
-/** Format "2006-01-02 15:04:05" → "02 Jan 15:04" (aman terhadap data rusak). */
-function formatEventTime(t: string): string {
-  if (!t) return "-";
-  const d = new Date(t.replace(" ", "T"));
-  if (isNaN(d.getTime())) return t;
-  return d.toLocaleString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 export default function GeofencePage() {
@@ -290,7 +278,7 @@ export default function GeofencePage() {
                           </p>
                         </div>
                         <span className="shrink-0 text-[11px]" style={{ color: "var(--v1-ink-faint)" }}>
-                          {formatEventTime(ev.event_time)}
+                          {formatDateTimeSec(ev.event_time)}
                         </span>
                       </li>
                     );

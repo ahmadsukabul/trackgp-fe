@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useTheme } from "@/components/theme-provider";
 import "./preview3.css";
 
 const FEATURES = [
@@ -30,7 +29,6 @@ const VEHICLES = [
 ];
 
 export function Preview3() {
-  const { theme } = useTheme();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {

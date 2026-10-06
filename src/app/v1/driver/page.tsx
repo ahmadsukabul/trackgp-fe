@@ -7,6 +7,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import { useBusiness } from "../lib/BusinessContext";
 import { MENU } from "../lib/menu";
 import { getApiErrorMessage } from "../lib/api";
+import { formatDate } from "@/lib/format-date";
 import {
   driverList,
   driverCreate,
@@ -203,7 +204,7 @@ export default function DriverPage() {
       render: (d) => (
         <div>
           <p className="font-mono text-[12px]" style={{ color: "var(--v1-ink-muted)" }}>{d.license_no || "-"}</p>
-          {d.license_exp && <p className="text-[11px]" style={{ color: "var(--v1-ink-faint)" }}>exp {d.license_exp.slice(0, 10)}</p>}
+          {d.license_exp && <p className="text-[11px]" style={{ color: "var(--v1-ink-faint)" }}>exp {formatDate(d.license_exp)}</p>}
         </div>
       ),
     },

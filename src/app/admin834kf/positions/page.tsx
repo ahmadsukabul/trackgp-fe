@@ -3,6 +3,7 @@
 import { adminFetch } from "../lib/api";
 import { DataTable, Column } from "../components/data-table";
 import { useKeysetPaging, ADMIN_PAGE_LIMIT } from "../lib/use-keyset-paging";
+import { formatDateTimeSec } from "@/lib/format-date";
 
 type Position = {
   id: number;
@@ -14,6 +15,7 @@ type Position = {
   altitude: number;
   course: number;
   accuracy: number;
+  satellites: number;
   address: string;
   server_time: string;
   device_time: string;
@@ -62,6 +64,16 @@ export default function PositionsPage() {
       render: (p) => <span className="text-[13px]">{Number(p.speed ?? 0).toFixed(1)}</span>,
     },
     {
+      key: "satellites",
+      header: "Satelit",
+      render: (p) => (
+        <span className="inline-flex items-center gap-1 text-[13px]">
+          {p.satellites ?? 0}
+          <span className="text-[11px] text-gray-400">sat</span>
+        </span>
+      ),
+    },
+    {
       key: "altitude",
       header: "Altitude (m)",
       render: (p) => <span className="text-[13px]">{Number(p.altitude ?? 0).toFixed(1)}</span>,
@@ -81,7 +93,11 @@ export default function PositionsPage() {
     {
       key: "server_time",
       header: "Server Time",
-      render: (p) => <span className="text-[12px] text-gray-500">{p.server_time || "-"}</span>,
+      render: (p) => (
+        <span className="text-[12px] text-gray-500 whitespace-nowrap">
+          {p.server_time ? formatDateTimeSec(p.server_time) : "-"}
+        </span>
+      ),
     },
   ];
 

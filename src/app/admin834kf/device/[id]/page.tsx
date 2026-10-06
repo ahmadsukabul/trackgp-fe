@@ -38,19 +38,26 @@ import {
   Trash2,
   Users,
   RefreshCw,
-  Calendar,
   History,
   MapPinned,
   LogIn,
   LogOut,
+  Route,
+  Maximize2,
 } from "lucide-react";
 import { adminFetch, getApiErrorMessage } from "../../lib/api";
 import { Section, StatCard, EmptyState } from "../../components/section";
 import { StatusBadge } from "../../components/data-table";
 import { PaginationBar } from "../../components/pagination";
 import { useKeysetPaging, ADMIN_PAGE_LIMIT } from "../../lib/use-keyset-paging";
+import { useAutoRefresh } from "../../lib/use-auto-refresh";
+import { formatDateTimeSec, nowLocalString } from "@/lib/format-date";
 import GeofenceMapModal, { type GeofenceData } from "../../components/geofence-map-modal";
 import GeofenceEventMapModal from "../../components/geofence-event-map-modal";
+import GeofenceAreaMap from "../../components/geofence-area-map";
+import RouteMap, { type RoutePoint, routeStats } from "../../components/route-map";
+import DateInput from "../../components/date-input";
+import AutoRefreshBadge from "../../components/auto-refresh-badge";
 
 // ---- Tipe data dari BE ------------------------------------------------------
 
@@ -202,35 +209,27 @@ type Driver = {
 
 // ---- Helper tampilan --------------------------------------------------------
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+// Section Geofence di detail device disembunyikan sementara: geofence kini
+// dikelola global per bisnis di halaman /admin834kf/geofence. Ubah ke true bila
+// ingin menampilkannya lagi.
+const SHOW_GEOFENCE_SECTION = false;
 
-/**
- * formatDateTime mengubah "YYYY-MM-DD HH:mm:ss" (waktu server) jadi
- * "27 Sep 2026 14:30". Sengaja tidak memakai toLocaleString karena hasilnya
- * berbeda antara server dan browser dan bisa memicu hydration mismatch.
- */
-function formatDateTime(value: string): string {
-  if (!value) return "-";
-  const d = new Date(value.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return value;
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} ${hh}:${mm}`;
-}
+// Batas titik rute per request (harus sama dengan RouteMaxPoints di BE).
+const ROUTE_LIMIT = 5000;
 
-/**
- * Varian sampai DETIK: "27 Sep 2026 14:30:05". Dipakai kolom waktu log posisi,
- * karena created_at/device_time di tbl_position_history berpresisi detik dan
- * beberapa fix bisa jatuh di menit yang sama.
- */
-function formatDateTimeSec(value: string): string {
-  if (!value) return "-";
-  const d = new Date(value.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return value;
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  const ss = String(d.getSeconds()).padStart(2, "0");
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} ${hh}:${mm}:${ss}`;
+// Interval auto-refresh untuk tab Log Posisi (ms).
+const POS_AUTO_REFRESH_MS = 15000;
+
+// Style input untuk filter rentang waktu di section Riwayat Posisi.
+const ROUTE_INPUT_CLS =
+  "pl-8 pr-3 py-2 text-[13px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2964e7]/30";
+
+/** Tanggal hari ini dalam format YYYY-MM-DD (waktu lokal browser). */
+function todayStr(): string {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
 /** Label baterai: -1 = perangkat belum lapor. */
@@ -396,6 +395,27 @@ function eventPoint(ev: GPSEvent): { lat: number | null; lng: number | null } {
   return { lat: null, lng: null };
 }
 
+/**
+ * Area geofence yang di-snapshot saat event terjadi (dibaca dari
+ * attributes_json.fence_polygon). null = event lama belum menyimpan snapshot,
+ * sehingga pemanggil harus fallback ke record geofence terkini.
+ */
+function eventAreaSnapshot(ev: GPSEvent): { name: string; color: string; polygon_coords: string } | null {
+  if (!ev.attributes_json) return null;
+  try {
+    const attrs = JSON.parse(ev.attributes_json);
+    const poly = typeof attrs?.fence_polygon === "string" ? attrs.fence_polygon : "";
+    if (!poly) return null;
+    return {
+      name: typeof attrs?.fence_name === "string" && attrs.fence_name ? attrs.fence_name : "Geofence",
+      color: typeof attrs?.fence_color === "string" && attrs.fence_color ? attrs.fence_color : "#FF0000",
+      polygon_coords: poly,
+    };
+  } catch {
+    return null;
+  }
+}
+
 
 /** Baterai: -1 = perangkat belum lapor. Warna mengikuti level. */
 function BatteryIcon({ level }: { level: number }) {
@@ -515,6 +535,22 @@ export default function GpsDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // ---- Riwayat Posisi (rute di peta) ----
+  // Rentang waktu memakai created_at (waktu server/WIB). Default: hari ini
+  // 00:00–23:59. Tanggal & jam mulai/selesai dipilih terpisah sehingga bisa
+  // menampilkan rute lintas hari. Threshold kecepatan diambil dari
+  // gps.speed_threshold; 0 = kecepatan diabaikan (tanpa segmen/label ngebut).
+  const [routeStartDate, setRouteStartDate] = useState(todayStr());
+  const [routeStart, setRouteStart] = useState("00:00");
+  const [routeEndDate, setRouteEndDate] = useState(todayStr());
+  const [routeEnd, setRouteEnd] = useState("23:59");
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [routeError, setRouteError] = useState<string | null>(null);
+  const [routeTruncated, setRouteTruncated] = useState(false);
+  const [routeLoaded, setRouteLoaded] = useState(false);
+  const [posMapOpen, setPosMapOpen] = useState(false);
+
   // ---- Log perangkat (tab: GPS Event / Log Posisi) ----
   // Dua sumber data digabung dalam satu Section dengan tab. Tab GPS Event
   // tampil lebih dulu karena event (alarm/geofence) yang biasanya dicari admin.
@@ -544,6 +580,8 @@ export default function GpsDetailPage() {
     color: string;
     polygon_coords: string;
   } | null>(null);
+  // true = area berasal dari snapshot saat event (bukan record terkini).
+  const [mapAreaSnapshot, setMapAreaSnapshot] = useState(false);
   const mapReqRef = useRef(0);
 
   const openEventMap = useCallback(
@@ -551,6 +589,16 @@ export default function GpsDetailPage() {
       if (!isGeofenceEvent(ev)) return;
       setMapEvent(ev);
 
+      // 1. Snapshot area saat event terjadi — paling akurat, tak terpengaruh
+      //    edit/hapus geofence. Dipakai lebih dulu bila tersedia.
+      const snap = eventAreaSnapshot(ev);
+      if (snap) {
+        setMapGeofence(snap);
+        setMapAreaSnapshot(true);
+        return;
+      }
+
+      // 2. Fallback: record geofence terkini dari list lokal.
       const local = geofences.find((g) => g.geofence_id === ev.geofence_id);
       if (local) {
         setMapGeofence({
@@ -558,9 +606,11 @@ export default function GpsDetailPage() {
           color: local.color,
           polygon_coords: local.polygon_coords,
         });
+        setMapAreaSnapshot(false);
         return;
       }
       setMapGeofence(null);
+      setMapAreaSnapshot(false);
       if (!ev.geofence_id) {
         // Event geofence dari sisi perangkat tidak menyimpan geofence_id,
         // jadi areanya tidak bisa diambil — peta tetap tampil dengan titiknya.
@@ -593,6 +643,61 @@ export default function GpsDetailPage() {
       return adminFetch<PositionHistory[]>(`/positions/history?${p}`);
     },
   });
+
+  // Auto-refresh tab Log Posisi: segarkan daftar tiap 15 dtk tanpa spinner agar
+  // fix GPS baru muncul sendiri. Hanya jalan saat tab "Log Posisi" aktif dan
+  // otomatis berhenti saat tab browser tidak dilihat (lihat useAutoRefresh).
+  const posAutoRefresh = useAutoRefresh({
+    intervalMs: POS_AUTO_REFRESH_MS,
+    paused: logTab !== "position",
+    onRefresh: () => posPaging.silentRefresh(),
+  });
+
+  // Muat rute pada rentang tanggal + jam mulai/selesai yang dipilih.
+  async function loadRoute() {
+    if (!deviceId) return;
+    const start = `${routeStartDate} ${routeStart}:00`;
+    const end = `${routeEndDate} ${routeEnd}:59`;
+    if (start > end) {
+      setRoutePoints([]);
+      setRouteLoaded(false);
+      setRouteTruncated(false);
+      setRouteError("Waktu selesai harus setelah waktu mulai.");
+      return;
+    }
+    setRouteLoading(true);
+    setRouteError(null);
+    setRouteTruncated(false);
+    const p = new URLSearchParams();
+    p.set("device_id", deviceId);
+    p.set("start", start);
+    p.set("end", end);
+    p.set("limit", String(ROUTE_LIMIT));
+    const res = await adminFetch<PositionHistory[]>(`/positions/route?${p}`);
+    setRouteLoading(false);
+    setRouteLoaded(true);
+    if (res.status !== 1 || !Array.isArray(res.data)) {
+      setRoutePoints([]);
+      setRouteError(getApiErrorMessage(res, "Gagal memuat rute"));
+      return;
+    }
+    setRoutePoints(
+      res.data.map((ph) => ({
+        lat: ph.latitude,
+        lng: ph.longitude,
+        speed: ph.speed,
+        time: ph.created_at || ph.device_time,
+      })),
+    );
+    setRouteTruncated(res.data.length >= ROUTE_LIMIT);
+  }
+
+  function resetRoute() {
+    setRoutePoints([]);
+    setRouteLoaded(false);
+    setRouteError(null);
+    setRouteTruncated(false);
+  }
 
   // State UI kirim command kustom. Pesan balasan GPS bersifat async — masuk
   // lewat TCP kemudian di-update ke baris command oleh BE. Kita re-fetch
@@ -764,7 +869,7 @@ export default function GpsDetailPage() {
       setPendingCmd({
         command_id: tempId,
         text,
-        sent_at: new Date().toISOString().slice(0, 19).replace("T", " "),
+        sent_at: nowLocalString(),
       });
       try {
         const res = await adminFetch<{ imei: string; command: string }>(`/gps/command`, {
@@ -989,7 +1094,7 @@ export default function GpsDetailPage() {
       adminFetch<Vehicle[]>(bisnisID ? `/vehicle?bisnis_id=${bisnisID}&limit=100` : "/vehicle?limit=100"),
       adminFetch<DeviceCommand[]>(`/gps/commands?device_id=${deviceId}&limit=${COMMAND_HISTORY_LIMIT}`),
       adminFetch<Position[]>(`/positions/all?device_id=${deviceId}&limit=1`),
-      adminFetch<Geofence[]>(`/device/${deviceId}/geofences`),
+      adminFetch<Geofence[]>(bisnisID ? `/geofence?bisnis_id=${encodeURIComponent(bisnisID)}&limit=100` : "/geofence?limit=100"),
       adminFetch<Driver[]>(`/device/${deviceId}/drivers`),
     ]);
 
@@ -1050,6 +1155,10 @@ export default function GpsDetailPage() {
   const status = (gps.status || "").toLowerCase();
   const isOnline = status === "online";
   const hasFix = !!position && (position.latitude !== 0 || position.longitude !== 0);
+
+  // Threshold kecepatan rute: diambil dari device; 0 = kecepatan diabaikan.
+  const speedThreshold = gps.speed_threshold ?? 0;
+  const routeStat = routeStats(routePoints, speedThreshold);
 
   return (
     <div className="space-y-5">
@@ -1130,6 +1239,8 @@ export default function GpsDetailPage() {
               <CircleHelp className="w-4 h-4 text-gray-300 dark:text-gray-600" />
             ) : gps.ignition === 1 ? (
               <Zap className="w-4 h-4 text-green-500" />
+            ) : gps.ignition === 2 ? (
+              <Zap className="w-4 h-4 text-orange-300 dark:text-orange-400/70" />
             ) : (
               <ZapOff className="w-4 h-4 text-gray-400" />
             )
@@ -1139,8 +1250,10 @@ export default function GpsDetailPage() {
             gps.ignition < 0
               ? "Belum diketahui"
               : gps.ignition === 1
-                ? "Menyala"
-                : "Mati"
+                ? "Hidup berjalan"
+                : gps.ignition === 2
+                  ? "Hidup parkir"
+                  : "Mati"
           }
         />
         <StatCard
@@ -1199,8 +1312,8 @@ export default function GpsDetailPage() {
               label="Status"
               custom={<StatusBadge status={gps.status || "unknown"} />}
             />
-            <DevInfoCell label="Terakhir Online" value={formatDateTime(gps.last_seen_at)} />
-            <DevInfoCell label="Didaftarkan" value={formatDateTime(gps.created_at)} />
+            <DevInfoCell label="Terakhir Online" value={formatDateTimeSec(gps.last_seen_at)} />
+            <DevInfoCell label="Didaftarkan" value={formatDateTimeSec(gps.created_at)} />
           </div>
         </Section>
 
@@ -1212,18 +1325,171 @@ export default function GpsDetailPage() {
               message="Perangkat belum pernah mengirim koordinat valid."
             />
           ) : (
-            <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-100 dark:border-gray-700/50 divide-y divide-gray-100 dark:divide-gray-700/30">
-              <DevInfoCell label="Koordinat" value={`${position!.latitude.toFixed(6)}, ${position!.longitude.toFixed(6)}`} mono />
-              <DevInfoCell label="Alamat" value={position!.address || null} fallback="-" />
-              <DevInfoCell label="Kecepatan" value={`${position!.speed.toFixed(1)} km/h`} />
-              <DevInfoCell label="Ketinggian" value={`${position!.altitude.toFixed(0)} m`} />
-              <DevInfoCell label="Akurasi" value={`${position!.accuracy.toFixed(0)} m`} />
-              <DevInfoCell label="Satelit" value={String(position!.satellites)} />
-              <DevInfoCell label="Waktu Perangkat" value={formatDateTime(position!.device_time)} />
+            <div className="space-y-3">
+              <div className="relative isolate rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 h-48">
+                <GeofenceAreaMap
+                  className="absolute inset-0"
+                  geofence={null}
+                  point={{
+                    lat: position!.latitude,
+                    lng: position!.longitude,
+                    label: "Lokasi terkini",
+                    color: "#2964e7",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setPosMapOpen(true)}
+                  className="absolute top-3 right-3 z-[1000] inline-flex items-center gap-1 px-2 py-1 bg-white/90 dark:bg-[#1a1a1c]/90 text-[11px] font-medium text-gray-700 dark:text-gray-200 rounded-md shadow hover:bg-white dark:hover:bg-[#1a1a1c] transition-colors"
+                >
+                  <Maximize2 className="w-3 h-3" />
+                  Perbesar
+                </button>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-100 dark:border-gray-700/50 divide-y divide-gray-100 dark:divide-gray-700/30">
+                <DevInfoCell label="Koordinat" value={`${position!.latitude.toFixed(6)}, ${position!.longitude.toFixed(6)}`} mono />
+                <DevInfoCell label="Alamat" value={position!.address || null} fallback="-" />
+                <DevInfoCell label="Kecepatan" value={`${position!.speed.toFixed(1)} km/h`} />
+                <DevInfoCell label="Ketinggian" value={`${position!.altitude.toFixed(0)} m`} />
+                <DevInfoCell label="Akurasi" value={`${position!.accuracy.toFixed(0)} m`} />
+                <DevInfoCell label="Satelit" value={String(position!.satellites)} />
+                <DevInfoCell label="Waktu Perangkat" value={formatDateTimeSec(position!.device_time)} />
+              </div>
             </div>
           )}
         </Section>
       </div>
+
+      {/* Riwayat Posisi — rute perjalanan di peta */}
+      <Section icon={<Route className="w-4 h-4" />} title="Riwayat Posisi">
+        <div className="flex flex-wrap items-end gap-2 mb-4">
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-gray-400 font-medium mb-1">Tanggal Mulai</label>
+            <DateInput value={routeStartDate} onChange={setRouteStartDate} className={ROUTE_INPUT_CLS} />
+          </div>
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-gray-400 font-medium mb-1">Jam Mulai</label>
+            <input
+              type="time"
+              value={routeStart}
+              onChange={(e) => setRouteStart(e.target.value)}
+              className={ROUTE_INPUT_CLS}
+            />
+          </div>
+          <span className="self-end pb-2 text-gray-300 dark:text-gray-600">—</span>
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-gray-400 font-medium mb-1">Tanggal Selesai</label>
+            <DateInput value={routeEndDate} onChange={setRouteEndDate} className={ROUTE_INPUT_CLS} />
+          </div>
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-gray-400 font-medium mb-1">Jam Selesai</label>
+            <input
+              type="time"
+              value={routeEnd}
+              onChange={(e) => setRouteEnd(e.target.value)}
+              className={ROUTE_INPUT_CLS}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadRoute()}
+            disabled={routeLoading || !routeStartDate || !routeEndDate}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-white bg-[#2964e7] rounded-lg hover:bg-[#2150c5] disabled:opacity-50 transition-colors"
+          >
+            <Route className="w-3.5 h-3.5" />
+            {routeLoading ? "Memuat..." : "Tampilkan Rute"}
+          </button>
+          {routeLoaded && (
+            <button
+              type="button"
+              onClick={resetRoute}
+              className="px-3 py-2 text-[13px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+
+        {speedThreshold <= 0 && (
+          <p className="mb-3 text-[12px] text-gray-500 dark:text-gray-400">
+            Threshold kecepatan device belum diisi — penanda kecepatan tidak ditampilkan.
+          </p>
+        )}
+
+        {routeError && (
+          <p className="text-[13px] text-red-600 dark:text-red-400 py-3">{routeError}</p>
+        )}
+
+        {routeLoaded && !routeLoading && routePoints.length === 0 && !routeError && (
+          <EmptyState
+            icon={<Route className="w-8 h-8" />}
+            message="Tidak ada data posisi pada rentang waktu ini."
+          />
+        )}
+
+        {routePoints.length > 0 && (
+          <>
+            <div className="relative isolate rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 h-[420px]">
+              <RouteMap className="absolute inset-0" points={routePoints} threshold={speedThreshold} />
+              <div className="absolute top-3 left-3 z-[1000] flex flex-wrap items-center gap-3 px-3 py-2 bg-white/90 dark:bg-[#1a1a1c]/90 rounded-lg shadow text-[11px] text-gray-600 dark:text-gray-300">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-4 h-1 rounded-full" style={{ backgroundColor: "#9ca3af" }} />
+                  Belum dilalui
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-4 h-1 rounded-full" style={{ backgroundColor: "#2964e7" }} />
+                  Sudah dilalui
+                </span>
+                {speedThreshold > 0 && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-4 h-1 rounded-full" style={{ backgroundColor: "#dc2626" }} />
+                    &gt; {speedThreshold.toFixed(0)} km/h
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#16a34a" }} />
+                  Mulai
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#fb923c" }} />
+                  Selesai
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-100 dark:border-gray-700/50 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-gray-400 font-medium">Jarak</p>
+                <p className="text-[15px] font-semibold text-gray-900 dark:text-white">
+                  {(routeStat.distanceMeters / 1000).toFixed(2)} km
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-100 dark:border-gray-700/50 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-gray-400 font-medium">Kecepatan Maks</p>
+                <p className="text-[15px] font-semibold text-gray-900 dark:text-white">
+                  {routeStat.maxSpeed.toFixed(1)} km/h
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-100 dark:border-gray-700/50 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-gray-400 font-medium">Segmen Ngebut</p>
+                <p className="text-[15px] font-semibold text-gray-900 dark:text-white">
+                  {speedThreshold > 0 ? routeStat.overspeedRuns : "-"}
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-100 dark:border-gray-700/50 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-gray-400 font-medium">Total Titik</p>
+                <p className="text-[15px] font-semibold text-gray-900 dark:text-white">{routePoints.length}</p>
+              </div>
+            </div>
+
+            {routeTruncated && (
+              <p className="mt-2 text-[12px] text-amber-600 dark:text-amber-400">
+                Rute dipotong pada {ROUTE_LIMIT} titik pertama. Persempit rentang waktu untuk detail penuh.
+              </p>
+            )}
+          </>
+        )}
+      </Section>
 
       {/* Kamera, Kendaraan, Geofence, Supir — 4 kolom di layar besar */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -1320,6 +1586,7 @@ export default function GpsDetailPage() {
         </Section>
 
         {/* Geofence */}
+        {SHOW_GEOFENCE_SECTION && (
         <Section
           icon={<Shield className="w-4 h-4" />}
           title={`Geofence (${geofences.length})`}
@@ -1381,6 +1648,7 @@ export default function GpsDetailPage() {
             </ul>
           )}
         </Section>
+        )}
 
         {/* Supir */}
         <Section
@@ -1455,21 +1723,16 @@ export default function GpsDetailPage() {
           <>
             {/* Filter tanggal + refresh */}
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              <div className="relative">
-                <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-                <input
-                  type="date"
-                  value={evDateFilter}
-                  onChange={(e) => {
-                    setEvDateFilter(e.target.value);
-                    evDateRef.current = e.target.value;
-                    setMapEvent(null);
-                    setMapGeofence(null);
-                    evPaging.reset();
-                  }}
-                  className="pl-8 pr-3 py-2 text-[13px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2964e7]/30"
-                />
-              </div>
+              <DateInput
+                value={evDateFilter}
+                onChange={(iso) => {
+                  setEvDateFilter(iso);
+                  evDateRef.current = iso;
+                  setMapEvent(null);
+                  setMapGeofence(null);
+                  evPaging.reset();
+                }}
+              />
               {evDateFilter && (
                 <button
                   onClick={() => {
@@ -1551,7 +1814,7 @@ export default function GpsDetailPage() {
                               } ${selected ? "bg-[#2964e7]/5 dark:bg-[#2964e7]/10" : ""}`}
                             >
                               <span className="col-span-2 text-[12px] text-gray-500 dark:text-gray-400">
-                                {formatDateTime(ev.event_time)}
+                                {formatDateTimeSec(ev.event_time)}
                               </span>
                               <span className="col-span-3 flex items-center gap-1.5 min-w-0">
                                 <span
@@ -1610,19 +1873,14 @@ export default function GpsDetailPage() {
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              <div className="relative">
-                <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-                <input
-                  type="date"
-                  value={posDateFilter}
-                  onChange={(e) => {
-                    setPosDateFilter(e.target.value);
-                    posDateRef.current = e.target.value;
-                    posPaging.reset();
-                  }}
-                  className="pl-8 pr-3 py-2 text-[13px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2964e7]/30"
-                />
-              </div>
+              <DateInput
+                value={posDateFilter}
+                onChange={(iso) => {
+                  setPosDateFilter(iso);
+                  posDateRef.current = iso;
+                  posPaging.reset();
+                }}
+              />
               {posDateFilter && (
                 <button
                   onClick={() => {
@@ -1642,6 +1900,12 @@ export default function GpsDetailPage() {
                 <RefreshCw className={`w-3.5 h-3.5 ${posPaging.loading ? "animate-spin" : ""}`} />
                 Refresh
               </button>
+              <AutoRefreshBadge
+                enabled={posAutoRefresh.enabled}
+                onToggle={posAutoRefresh.setEnabled}
+                lastAt={posAutoRefresh.lastAt}
+                intervalMs={POS_AUTO_REFRESH_MS}
+              />
             </div>
 
             {posPaging.error ? (
@@ -1692,7 +1956,8 @@ export default function GpsDetailPage() {
                           </div>
                         ))
                       : posPaging.rows.map((ph) => {
-                          const ignitionOn = ph.ignition === 1;
+                          const ignitionMoving = ph.ignition === 1;
+                          const ignitionParked = ph.ignition === 2;
                           const ignitionOff = ph.ignition === 0;
                           return (
                             <div
@@ -1720,14 +1985,16 @@ export default function GpsDetailPage() {
                               <span className="col-span-1 flex justify-center">
                                 <span
                                   className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
-                                    ignitionOn
+                                    ignitionMoving
                                       ? "bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400"
-                                      : ignitionOff
-                                        ? "bg-gray-100 text-gray-500 dark:bg-gray-700/40 dark:text-gray-400"
-                                        : "bg-gray-50 text-gray-400 dark:bg-gray-800/40"
+                                      : ignitionParked
+                                        ? "bg-orange-50 text-orange-600 dark:bg-orange-400/10 dark:text-orange-300"
+                                        : ignitionOff
+                                          ? "bg-gray-100 text-gray-500 dark:bg-gray-700/40 dark:text-gray-400"
+                                          : "bg-gray-50 text-gray-400 dark:bg-gray-800/40"
                                   }`}
                                 >
-                                  {ignitionOn ? "ON" : ignitionOff ? "OFF" : "-"}
+                                  {ignitionMoving ? "JALAN" : ignitionParked ? "PARKIR" : ignitionOff ? "OFF" : "-"}
                                 </span>
                               </span>
                             </div>
@@ -1821,7 +2088,7 @@ export default function GpsDetailPage() {
                   <div className="flex justify-end">
                     <div className="max-w-[78%] ml-auto space-y-1 text-right">
                       <p className="text-[10px] text-gray-400 dark:text-gray-500">
-                        {formatDateTime(cmd.sent_at || cmd.created_at)}
+                        {formatDateTimeSec(cmd.sent_at || cmd.created_at)}
                       </p>
                       <div className="flex items-center justify-end gap-1.5">
                         <span
@@ -1843,7 +2110,7 @@ export default function GpsDetailPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="max-w-[78%] space-y-1">
                         <p className="text-[10px] text-gray-400 dark:text-gray-500">
-                          {formatDateTime(cmd.delivered_at)}
+                          {formatDateTimeSec(cmd.delivered_at)}
                         </p>
                         <div className="inline-block px-3 py-2 rounded-2xl rounded-tl-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white text-[13px] font-mono whitespace-pre-wrap break-words">
                           {extractReplyText(cmd)}
@@ -1892,7 +2159,7 @@ export default function GpsDetailPage() {
                         Mengirim…
                       </span>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                        {formatDateTime(pendingCmd.sent_at)}
+                        {formatDateTimeSec(pendingCmd.sent_at)}
                       </span>
                     </div>
                     <div className="inline-block px-3 py-2 rounded-2xl rounded-tr-sm bg-[#2964e7]/70 text-white text-[13px] font-mono whitespace-pre-wrap break-words">
@@ -2184,17 +2451,20 @@ export default function GpsDetailPage() {
         </div>
       )}
 
-      {/* ---- Modal Tambah Geofence (Map) ---- */}
-      <GeofenceMapModal
-        open={geoModalOpen}
-        onClose={() => { setGeoModalOpen(false); setGeoEdit(null); }}
-        editGeofence={geoEdit}
-        deviceId={deviceId}
-        bisnisId={gps?.bisnis_id || ""}
-        centerLat={position?.latitude}
-        centerLng={position?.longitude}
-        onSaved={() => void load()}
-      />
+      {/* ---- Modal Tambah Geofence (Map) — hanya saat section geofence tampil ---- */}
+      {SHOW_GEOFENCE_SECTION && (
+        <GeofenceMapModal
+          open={geoModalOpen}
+          onClose={() => { setGeoModalOpen(false); setGeoEdit(null); }}
+          editGeofence={geoEdit}
+          bisnisId={gps?.bisnis_id || ""}
+          bisnisName={gps?.bisnis?.name || ""}
+          lockBisnis
+          centerLat={position?.latitude}
+          centerLng={position?.longitude}
+          onSaved={() => void load()}
+        />
+      )}
 
       {/* ---- Modal peta event geofence (sama seperti halaman detail geofence) ---- */}
       <GeofenceEventMapModal
@@ -2202,8 +2472,16 @@ export default function GpsDetailPage() {
         onClose={() => {
           setMapEvent(null);
           setMapGeofence(null);
+          setMapAreaSnapshot(false);
         }}
         geofence={mapGeofence}
+        areaNote={
+          mapGeofence
+            ? mapAreaSnapshot
+              ? "Area saat event"
+              : "Area terkini (log lama)"
+            : undefined
+        }
         event={
           mapEvent
             ? {
@@ -2318,6 +2596,61 @@ export default function GpsDetailPage() {
               >
                 {assigningDrv ? "Menyimpan..." : "Assign Supir"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Modal perbesar peta lokasi terkini ---- */}
+      {posMapOpen && hasFix && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setPosMapOpen(false)} />
+          <div className="relative bg-white dark:bg-[#1a1a1c] rounded-2xl shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800/60 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Navigation className="w-4 h-4 text-gray-400 shrink-0" />
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-white truncate">Lokasi GPS Terkini</h2>
+              </div>
+              <button
+                onClick={() => setPosMapOpen(false)}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+            <div className="relative flex-1 min-h-[420px]">
+              <GeofenceAreaMap
+                className="absolute inset-0"
+                geofence={null}
+                point={{
+                  lat: position!.latitude,
+                  lng: position!.longitude,
+                  label: "Lokasi terkini",
+                  color: "#2964e7",
+                }}
+              />
+            </div>
+            <div className="shrink-0 border-t border-gray-100 dark:border-gray-800/60 px-5 py-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-2">
+                <div className="min-w-0">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-400 font-medium mb-0.5">Koordinat</p>
+                  <p className="text-[12px] font-mono text-gray-900 dark:text-white truncate">
+                    {position!.latitude.toFixed(6)}, {position!.longitude.toFixed(6)}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-400 font-medium mb-0.5">Alamat</p>
+                  <p className="text-[12px] text-gray-900 dark:text-white truncate" title={position!.address || ""}>
+                    {position!.address || "-"}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-400 font-medium mb-0.5">Waktu Perangkat</p>
+                  <p className="text-[12px] text-gray-900 dark:text-white truncate">
+                    {formatDateTimeSec(position!.device_time)}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

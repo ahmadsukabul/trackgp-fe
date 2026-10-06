@@ -14,6 +14,7 @@ import {
 } from "./lib/client";
 import { getApiErrorMessage } from "./lib/api";
 import { MENU } from "./lib/menu";
+import { formatDateTimeSec } from "@/lib/format-date";
 
 // MapLibre menyentuh window/document saat import, jadi hanya boleh dimuat di browser.
 const Map = dynamic(() => import("./components/MapCanvas"), {
@@ -114,7 +115,7 @@ export default function DashboardPage() {
       ignition: p.ignition,
       speed: p.speed,
       plate: p.model ? `${p.protocol || "GPS"} · ${p.model}` : p.protocol,
-      lastSeen: p.device_time || p.last_seen_at,
+      lastSeen: p.device_time || p.last_seen_at ? formatDateTimeSec(p.device_time || p.last_seen_at) : undefined,
     }));
   }, [validPoints, selectedDeviceId]);
 

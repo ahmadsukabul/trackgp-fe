@@ -119,11 +119,13 @@ export default function MapCanvas({
 
       for (const pt of pts) {
         const isOff = pt.ignition === 0;
+        const isParked = pt.ignition === 2;
         const statusColor = COLOR[pt.status] ?? COLOR.offline;
         // ignition off: body abu-abu, border hijau (menandakan mesin mati)
-        // ignition on: body warna status, border putih
-        const bodyColor = isOff ? "#9ca3af" : statusColor;
-        const borderColor = isOff ? "#10b981" : "#ffffff";
+        // ignition parkir: body oren pudar, border oren (mesin hidup tapi diam)
+        // ignition jalan: body warna status, border putih
+        const bodyColor = isOff ? "#9ca3af" : isParked ? "#fdba74" : statusColor;
+        const borderColor = isOff ? "#10b981" : isParked ? "#f97316" : "#ffffff";
 
         const dot = document.createElement("div");
         dot.style.cssText = "cursor:pointer";

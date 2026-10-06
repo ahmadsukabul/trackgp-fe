@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { adminFetch, getApiErrorMessage } from "../lib/api";
 import { DataTable, Column, StatusBadge, Modal, FormField, Input, Select } from "../components/data-table";
 import { useKeysetPaging, ADMIN_PAGE_LIMIT } from "../lib/use-keyset-paging";
+import { formatDate } from "@/lib/format-date";
 import { Edit2, Trash2 } from "lucide-react";
 
 type Driver = {
@@ -178,7 +179,7 @@ export default function DriverPage() {
     {
       key: "license_exp",
       header: "Exp. Lisensi",
-      render: (d) => <span className="text-[13px]">{d.license_exp || "-"}</span>,
+      render: (d) => <span className="text-[13px]">{d.license_exp ? formatDate(d.license_exp) : "-"}</span>,
     },
     {
       key: "status",

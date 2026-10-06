@@ -5,6 +5,8 @@ import Link from "next/link";
 import { adminFetch, getApiErrorMessage } from "../lib/api";
 import { DataTable, Column, Modal, FormField, Input } from "../components/data-table";
 import { useKeysetPaging, ADMIN_PAGE_LIMIT } from "../lib/use-keyset-paging";
+import { useAutoRefresh } from "../lib/use-auto-refresh";
+import { formatDateTimeSec, parseDateParts } from "@/lib/format-date";
 import {
   BatteryFull,
   BatteryLow,
@@ -18,6 +20,7 @@ import {
   SignalLow,
   SignalMedium,
   SignalZero,
+  Satellite,
   Edit2,
   Trash2,
 } from "lucide-react";
@@ -36,6 +39,7 @@ type Gps = {
   phone_number: string;
   battery_level: number;
   course: number;
+  satellites: number;
   ignition: number;
   signal_level: number;
   last_address: string;
@@ -141,7 +145,25 @@ function SignalLevelIcon({ level }: { level: number }) {
   );
 }
 
-/** Ignition: -1 = unknown, 0 = mati, 1 = menyala. */
+/** Satelit: -1 = unknown (belum ada fix valid), 0 = belum dapat satelit. */
+function SatellitesIcon({ count }: { count: number }) {
+  if (count < 0) {
+    return (
+      <span title="Jumlah satelit belum diketahui" className="inline-flex text-gray-300 dark:text-gray-600">
+        <Satellite className="w-4 h-4" />
+      </span>
+    );
+  }
+  const color = count === 0 ? "text-red-500" : count < 5 ? "text-yellow-500" : "text-green-500";
+  return (
+    <span title={`${count} satelit`} className={`inline-flex items-center gap-1 ${color}`}>
+      <Satellite className="w-4 h-4" />
+      <span className="text-[13px] tabular-nums">{count}</span>
+    </span>
+  );
+}
+
+/** Ignition: -1 = unknown, 0 = mati, 1 = hidup berjalan, 2 = hidup parkir. */
 function DeviceStatusIcon({ ignition }: { ignition: number }) {
   if (ignition < 0) {
     return (
@@ -149,10 +171,19 @@ function DeviceStatusIcon({ ignition }: { ignition: number }) {
     );
   }
 
+  if (ignition === 2) {
+    return (
+      <span
+        title="Ignition menyala - parkir"
+        className="inline-block w-2.5 h-2.5 rounded-full bg-orange-300 dark:bg-orange-400/70"
+      />
+    );
+  }
+
   const isOn = ignition === 1;
   return (
     <span
-      title={isOn ? "Ignition menyala" : "Ignition mati"}
+      title={isOn ? "Ignition menyala - berjalan" : "Ignition mati"}
       className={`inline-block w-2.5 h-2.5 rounded-full ${isOn ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"}`}
     />
   );
@@ -160,9 +191,11 @@ function DeviceStatusIcon({ ignition }: { ignition: number }) {
 
 function formatRelative(value: string): string {
   if (!value) return "-";
-  const parsed = new Date(value.replace(" ", "T"));
-  const ts = parsed.getTime();
-  if (Number.isNaN(ts)) return value || "-";
+  // Bangun waktu lokal dari komponen string (bukan `new Date` mentah) supaya
+  // tidak bergeser mengikuti timezone browser.
+  const p = parseDateParts(value);
+  if (!p) return value || "-";
+  const ts = new Date(p.year, p.month, p.day, p.hour, p.minute, p.second).getTime();
   const seconds = Math.floor((Date.now() - ts) / 1000);
   if (seconds < 0) return "baru saja";
   if (seconds < 60) return "baru saja";
@@ -176,6 +209,9 @@ function formatRelative(value: string): string {
   if (months < 12) return `${months} bulan yang lalu`;
   return `${Math.floor(months / 12)} tahun yang lalu`;
 }
+
+/** Interval auto-refresh daftar device (ms). */
+const AUTO_REFRESH_MS = 15000;
 
 export default function GpsPage() {
   const [mounted, setMounted] = useState(false);
@@ -203,6 +239,15 @@ export default function GpsPage() {
       if (statusFilter) params.set("status", statusFilter);
       return adminFetch<Gps[]>(`/device?${params}`);
     },
+  });
+
+  // Auto-refresh latar: segarkan daftar tiap 15 dtk tanpa spinner supaya status
+  // perangkat (online/offline, baterai, sinyal, satelit) ikut ter-update tanpa
+  // refresh manual. Ditahan saat modal edit/hapus terbuka dan saat tab tidak aktif.
+  const autoRefresh = useAutoRefresh({
+    intervalMs: AUTO_REFRESH_MS,
+    paused: modalOpen || !!deleteId,
+    onRefresh: () => paging.silentRefresh(),
   });
 
   function handleSearch(filters: Record<string, string>) {
@@ -335,6 +380,12 @@ export default function GpsPage() {
       ),
     },
     {
+      key: "satellites",
+      header: "Satelit",
+      className: "w-20",
+      render: (g) => <SatellitesIcon count={Number(g.satellites ?? -1)} />,
+    },
+    {
       key: "protocol",
       header: "Protocol",
       render: (g) => <span className="text-[13px]">{g.protocol || "-"}</span>,
@@ -343,7 +394,7 @@ export default function GpsPage() {
       key: "last_seen_at",
       header: "Terakhir Online",
       render: (g) => (
-        <span className="text-[12px] text-gray-500" title={g.last_seen_at || ""}>
+        <span className="text-[12px] text-gray-500" title={g.last_seen_at ? formatDateTimeSec(g.last_seen_at) : ""}>
           {mounted ? formatRelative(g.last_seen_at) : ""}
         </span>
       ),
@@ -380,6 +431,12 @@ export default function GpsPage() {
         onNext={paging.goNext}
         onPageJump={paging.goPage}
         onRefresh={paging.reload}
+        autoRefresh={{
+          enabled: autoRefresh.enabled,
+          onToggle: autoRefresh.setEnabled,
+          lastAt: autoRefresh.lastAt,
+          intervalMs: AUTO_REFRESH_MS,
+        }}
         emptyMessage="Belum ada perangkat GPS terdaftar"
         searchFields={[
           { key: "device_id", placeholder: "Device ID", width: "w-[160px]" },

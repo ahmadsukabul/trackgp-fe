@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useTheme } from "@/components/theme-provider";
 import { Preview1 } from "./preview1";
 import { Preview2 } from "./preview2";
 import { Preview3 } from "./preview3";
@@ -29,7 +28,6 @@ function hasVersiLandingParam(): boolean {
 }
 
 export function LandingContent() {
-  const { theme } = useTheme();
   const [active, setActive] = useState<PreviewId>("3");
   const [showSelector, setShowSelector] = useState(false);
 
@@ -66,8 +64,8 @@ export function LandingContent() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: theme === "dark" ? "#0b1220" : "#f5f7fa",
-      color: theme === "dark" ? "#e2e8f0" : "#1e293b",
+      background: "var(--landing-bg)",
+      color: "var(--landing-fg)",
       fontFamily: "'Inter', system-ui, sans-serif",
     }}>
       {/* Preview selector bar — only when ?versilanding exists */}
@@ -76,9 +74,9 @@ export function LandingContent() {
         position: "sticky",
         top: 0,
         zIndex: 100,
-        background: theme === "dark" ? "rgba(15,23,42,0.95)" : "rgba(255,255,255,0.95)",
+        background: "var(--landing-bar-bg)",
         backdropFilter: "blur(12px)",
-        borderBottom: `1px solid ${theme === "dark" ? "#1e293b" : "#e2e8f0"}`,
+        borderBottom: "1px solid var(--landing-border)",
         padding: "12px 24px",
       }}>
         <div style={{
@@ -105,7 +103,7 @@ export function LandingContent() {
               <span style={{
                 marginLeft: 8,
                 fontSize: 11,
-                color: theme === "dark" ? "#64748b" : "#94a3b8",
+                color: "var(--landing-muted)",
                 fontWeight: 500,
               }}>Landing Page Previews</span>
             </div>
@@ -120,11 +118,9 @@ export function LandingContent() {
                   display: "inline-flex", alignItems: "center", gap: 6,
                   height: 34, padding: "0 14px",
                   borderRadius: 999,
-                  border: `1px solid ${active === p.id ? "#2964e7" : theme === "dark" ? "#334155" : "#e2e8f0"}`,
-                  background: active === p.id
-                    ? "#2964e7"
-                    : theme === "dark" ? "rgba(30,41,59,0.5)" : "rgba(255,255,255,0.8)",
-                  color: active === p.id ? "white" : theme === "dark" ? "#cbd5e1" : "#475569",
+                  border: `1px solid ${active === p.id ? "#2964e7" : "var(--landing-pill-border)"}`,
+                  background: active === p.id ? "#2964e7" : "var(--landing-pill-bg)",
+                  color: active === p.id ? "white" : "var(--landing-pill-fg)",
                   fontSize: 12, fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.15s",

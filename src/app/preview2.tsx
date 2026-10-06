@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useTheme } from "@/components/theme-provider";
 import "./preview2.css";
 
 const BENTO_ITEMS = [
@@ -75,7 +74,6 @@ const STEPS = [
 ];
 
 export function Preview2() {
-  const { theme } = useTheme();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {

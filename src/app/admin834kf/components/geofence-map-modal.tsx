@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, MapPin, Undo2, RotateCcw } from "lucide-react";
 import { adminFetch, getApiErrorMessage } from "../lib/api";
+import BisnisSelect from "./bisnis-select";
 
 // ---- Dynamic import Leaflet (no SSR) ----
 let L: typeof import("leaflet") | null = null;
@@ -29,6 +30,7 @@ export interface GeofenceData {
   color: string;
   status: number;
   polygon_coords: string;
+  min_fixes?: number;
 }
 
 interface Props {
@@ -36,8 +38,12 @@ interface Props {
   onClose: () => void;
   /** Mode edit — isi untuk edit geofence yang sudah ada */
   editGeofence?: GeofenceData | null;
-  deviceId: string;
+  /** bisnis_id pemilik geofence (wajib) */
   bisnisId: string;
+  /** nama bisnis, ditampilkan saat pilihan bisnis dikunci */
+  bisnisName?: string;
+  /** kunci pilihan bisnis (mis. dibuka dari halaman detail bisnis) */
+  lockBisnis?: boolean;
   centerLat?: number;
   centerLng?: number;
   onSaved: () => void;
@@ -47,8 +53,9 @@ export default function GeofenceMapModal({
   open,
   onClose,
   editGeofence,
-  deviceId,
   bisnisId,
+  bisnisName = "",
+  lockBisnis = false,
   centerLat = -6.21,
   centerLng = 106.84,
   onSaved,
@@ -64,6 +71,10 @@ export default function GeofenceMapModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(COLORS[0]);
+  const [status, setStatus] = useState("1");
+  const [minFixes, setMinFixes] = useState("2");
+  const [bisnis, setBisnis] = useState(bisnisId);
+  const [bisnisLabel, setBisnisLabel] = useState(bisnisName);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -220,16 +231,22 @@ export default function GeofenceMapModal({
       setName(editGeofence.name || "");
       setDescription(editGeofence.description || "");
       setColor(editGeofence.color || COLORS[0]);
+      setStatus(String(editGeofence.status ?? 1));
+      setMinFixes(String(editGeofence.min_fixes ?? 2));
     } else {
       setName("");
       setDescription("");
       setColor(COLORS[0]);
+      setStatus("1");
+      setMinFixes("2");
     }
+    setBisnis(bisnisId);
+    setBisnisLabel(bisnisName);
     closedRef.current = false;
     setPolygonPoints([]);
     pointsCountRef.current = 0;
     setError(null);
-  }, [open, editGeofence]);
+  }, [open, editGeofence, bisnisId, bisnisName]);
 
   // ---- Undo / Reset ----
   function resetDrawing() {
@@ -256,6 +273,10 @@ export default function GeofenceMapModal({
       setError("Nama geofence harus diisi");
       return;
     }
+    if (!isEdit && !bisnis) {
+      setError("Bisnis harus dipilih");
+      return;
+    }
     if (polygonPoints.length < 3) {
       setError("Polygon minimal 3 titik. Klik di map untuk menambah titik, double-click untuk menutup.");
       return;
@@ -273,6 +294,8 @@ export default function GeofenceMapModal({
           name: name.trim(),
           description: description.trim(),
           color,
+          status: Number(status),
+          min_fixes: Number(minFixes) || 2,
           area_type: "polygon",
           polygon_coords: polygonCoords,
         },
@@ -286,36 +309,26 @@ export default function GeofenceMapModal({
       const createRes = await adminFetch<{ geofence_id: string }>("/geofence", {
         method: "POST",
         body: {
-          bisnis_id: bisnisId,
+          bisnis_id: bisnis,
           name: name.trim(),
           description: description.trim(),
           area_type: "polygon",
           color,
+          min_fixes: Number(minFixes) || 2,
           polygon_coords: polygonCoords,
         },
       });
 
-      if (createRes.status !== 1 || !createRes.data) {
-        setSaving(false);
-        setError(getApiErrorMessage(createRes, "Gagal membuat geofence"));
-        return;
-      }
-
-      const assignRes = await adminFetch(`/geofence/${createRes.data.geofence_id}/devices`, {
-        method: "POST",
-        body: { device_id: deviceId },
-      });
-
       setSaving(false);
-      if (assignRes.status !== 1) {
-        setError(getApiErrorMessage(assignRes, "Geofence dibuat tapi gagal di-assign"));
+      if (createRes.status !== 1 || !createRes.data) {
+        setError(getApiErrorMessage(createRes, "Gagal membuat geofence"));
         return;
       }
     }
 
     onSaved();
     onClose();
-  }, [name, description, color, polygonPoints, isEdit, editGeofence, bisnisId, deviceId, onSaved, onClose]);
+  }, [name, description, color, status, minFixes, bisnis, polygonPoints, isEdit, editGeofence, onSaved, onClose]);
 
   if (!open) return null;
 
@@ -388,6 +401,27 @@ export default function GeofenceMapModal({
           {/* Sidebar form */}
           <div className="w-72 shrink-0 border-l border-gray-100 dark:border-gray-800/60 flex flex-col overflow-y-auto">
             <div className="p-4 space-y-4">
+              {/* Bisnis — hanya saat membuat baru */}
+              {!isEdit && (
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-500 dark:text-gray-400 mb-1">Bisnis *</label>
+                  {lockBisnis ? (
+                    <div className="w-full px-3 py-2 text-[13px] bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 dark:text-gray-400 truncate">
+                      {bisnisLabel || bisnis || "-"}
+                    </div>
+                  ) : (
+                    <BisnisSelect
+                      value={bisnis}
+                      initialName={bisnisLabel}
+                      onChange={(id, nm) => {
+                        setBisnis(id);
+                        setBisnisLabel(nm);
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+
               {/* Name */}
               <div>
                 <label className="block text-[12px] font-medium text-gray-500 dark:text-gray-400 mb-1">Nama Geofence *</label>
@@ -410,6 +444,34 @@ export default function GeofenceMapModal({
                   rows={2}
                   className="w-full px-3 py-2 text-[13px] bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2964e7]/30 resize-none"
                 />
+              </div>
+
+              {/* Status + Min Fixes */}
+              <div className="grid grid-cols-2 gap-3">
+                {isEdit && (
+                  <div>
+                    <label className="block text-[12px] font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      className="w-full px-3 py-2 text-[13px] bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2964e7]/30"
+                    >
+                      <option value="1">Aktif</option>
+                      <option value="0">Nonaktif</option>
+                    </select>
+                  </div>
+                )}
+                <div className={isEdit ? "" : "col-span-2"}>
+                  <label className="block text-[12px] font-medium text-gray-500 dark:text-gray-400 mb-1">Min Fixes</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={minFixes}
+                    onChange={(e) => setMinFixes(e.target.value)}
+                    placeholder="2"
+                    className="w-full px-3 py-2 text-[13px] bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2964e7]/30"
+                  />
+                </div>
               </div>
 
               {/* Color */}
@@ -466,10 +528,10 @@ export default function GeofenceMapModal({
             <div className="p-4 border-t border-gray-100 dark:border-gray-800/60 mt-auto">
               <button
                 onClick={() => void handleSubmit()}
-                disabled={saving || !name.trim()}
+                disabled={saving || !name.trim() || (!isEdit && !bisnis)}
                 className="w-full px-4 py-2.5 text-[13px] font-medium text-white bg-[#2964e7] rounded-lg hover:bg-[#2150c5] disabled:opacity-50 transition-colors"
               >
-                {saving ? "Menyimpan..." : isEdit ? "Update Geofence" : "Buat & Assign Geofence"}
+                {saving ? "Menyimpan..." : isEdit ? "Update Geofence" : "Buat Geofence"}
               </button>
             </div>
           </div>

@@ -43,6 +43,12 @@ interface Props {
    * (mis. "relative h-[320px] w-full"); default "relative h-full w-full".
    */
   className?: string;
+  /**
+   * Keterangan kecil di atas peta (mis. "Area saat event"). Ditampilkan hanya
+   * bila polygon ada. Berguna untuk menandai bahwa area yang digambar adalah
+   * snapshot historis, bukan area terkini.
+   */
+  note?: string;
 }
 
 /**
@@ -53,7 +59,7 @@ interface Props {
  * Container WAJIB punya tinggi eksplisit; peta mengisi container lewat
  * `absolute inset-0`.
  */
-export default function GeofenceAreaMap({ geofence, point, className }: Props) {
+export default function GeofenceAreaMap({ geofence, point, className, note }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<import("leaflet").Map | null>(null);
   const markerRef = useRef<import("leaflet").CircleMarker | null>(null);
@@ -168,16 +174,23 @@ export default function GeofenceAreaMap({ geofence, point, className }: Props) {
     <div className={className ?? "relative h-full w-full"}>
       <div ref={mapRef} className="absolute inset-0" />
 
-      {hasPoint && (
-        <button
-          type="button"
-          onClick={() => mapInstance.current?.setView([point!.lat as number, point!.lng as number], 17)}
-          className="absolute top-3 left-3 z-[1000] px-2 py-1 text-white text-[10px] font-medium rounded-md shadow transition-colors"
-          style={{ backgroundColor: accent }}
-        >
-          📍 Titik GPS
-        </button>
-      )}
+      <div className="absolute top-3 left-3 z-[1000] flex flex-col items-start gap-1.5">
+        {note && geofence && (
+          <div className="px-2 py-1 bg-black/70 text-white text-[10px] font-medium rounded-md shadow">
+            {note}
+          </div>
+        )}
+        {hasPoint && (
+          <button
+            type="button"
+            onClick={() => mapInstance.current?.setView([point!.lat as number, point!.lng as number], 17)}
+            className="px-2 py-1 text-white text-[10px] font-medium rounded-md shadow transition-colors"
+            style={{ backgroundColor: accent }}
+          >
+            📍 Titik GPS
+          </button>
+        )}
+      </div>
 
       {point && !hasPoint && (
         <div className="absolute bottom-3 left-3 z-[1000] px-3 py-1.5 bg-black/70 text-white text-[11px] rounded-lg">

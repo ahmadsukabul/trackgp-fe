@@ -6,6 +6,7 @@ import { DataTable, Column, StatusBadge, Modal, FormField, Input, Select } from 
 import { useKeysetPaging, ADMIN_PAGE_LIMIT } from "../lib/use-keyset-paging";
 import { Edit2, Trash2, Truck, X } from "lucide-react";
 import Link from "next/link";
+import { formatDateTimeSec } from "@/lib/format-date";
 
 type Vehicle = {
   id: number;
@@ -65,17 +66,6 @@ const STATUS_OPTIONS = [
   { label: "Aktif", value: "1" },
   { label: "Nonaktif", value: "0" },
 ];
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-
-function formatDateTime(value: string): string {
-  if (!value) return "-";
-  const d = new Date(value.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return value;
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} ${hh}:${mm}`;
-}
 
 export default function VehiclePage() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -353,7 +343,7 @@ export default function VehiclePage() {
               <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800/60">
                 <h4 className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Waktu</h4>
                 <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-100 dark:border-gray-700/50 divide-y divide-gray-100 dark:divide-gray-700/30">
-                  <InfoCell label="Dibuat" value={formatDateTime(drawer.created_at)} />
+                  <InfoCell label="Dibuat" value={formatDateTimeSec(drawer.created_at)} />
                 </div>
               </div>
             </div>

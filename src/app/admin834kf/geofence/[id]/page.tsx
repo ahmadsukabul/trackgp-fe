@@ -11,7 +11,6 @@ import {
   LogIn,
   LogOut,
   RefreshCw,
-  Calendar,
   Navigation,
   Hash,
   Activity,
@@ -25,6 +24,8 @@ import { StatusBadge } from "../../components/data-table";
 import { PaginationBar } from "../../components/pagination";
 import { useKeysetPaging, ADMIN_PAGE_LIMIT } from "../../lib/use-keyset-paging";
 import GeofenceEventMapModal from "../../components/geofence-event-map-modal";
+import DateInput from "../../components/date-input";
+import { formatDateTimeSec } from "@/lib/format-date";
 
 // ---- Tipe data ---------------------------------------------------------------
 
@@ -67,17 +68,6 @@ const TYPE_OPTIONS = [
 
 // ---- Helper ------------------------------------------------------------------
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-
-function formatDateTime(value: string): string {
-  if (!value) return "-";
-  const d = new Date(value.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return value;
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} ${hh}:${mm}`;
-}
-
 /** Hitung jumlah titik polygon dari polygon_coords JSON (aman terhadap data rusak). */
 function countPoints(polygonCoords: string): number {
   if (!polygonCoords) return 0;
@@ -118,6 +108,40 @@ function eventPoint(ev: GeofenceEvent): { lat: number | null; lng: number | null
     } catch { /* ignore */ }
   }
   return { lat: null, lng: null };
+}
+
+/**
+ * Area geofence yang dirender di peta log. Prioritas:
+ *  1. Snapshot di attributes_json (kondisi area SAAT event terjadi) — akurat
+ *     walau geofence kemudian diedit/dihapus.
+ *  2. Record geofence terkini — fallback untuk event lama yang belum punya
+ *     snapshot.
+ * `snapshot` = true berarti area berasal dari snapshot.
+ */
+function eventArea(
+  ev: GeofenceEvent,
+  current: Geofence,
+): { geofence: { name: string; color: string; polygon_coords: string }; snapshot: boolean } {
+  if (ev.attributes_json) {
+    try {
+      const attrs = JSON.parse(ev.attributes_json);
+      const poly = typeof attrs?.fence_polygon === "string" ? attrs.fence_polygon : "";
+      if (poly) {
+        return {
+          geofence: {
+            name: typeof attrs?.fence_name === "string" && attrs.fence_name ? attrs.fence_name : current.name,
+            color: typeof attrs?.fence_color === "string" && attrs.fence_color ? attrs.fence_color : current.color,
+            polygon_coords: poly,
+          },
+          snapshot: true,
+        };
+      }
+    } catch { /* ignore */ }
+  }
+  return {
+    geofence: { name: current.name, color: current.color, polygon_coords: current.polygon_coords },
+    snapshot: false,
+  };
 }
 
 /** InfoCell — satu sel label/value untuk grid informasi. */
@@ -249,6 +273,7 @@ export default function GeofenceDetailPage() {
   }
 
   const points = countPoints(geofence.polygon_coords);
+  const mapArea = mapEvent ? eventArea(mapEvent, geofence) : null;
 
   return (
     <div className="space-y-5">
@@ -313,8 +338,8 @@ export default function GeofenceDetailPage() {
             <InfoCell label="Status" custom={<StatusBadge status={geofence.status} />} />
           </div>
           <div className="grid grid-cols-2 gap-x-6 px-3 py-2.5">
-            <InfoCell label="Dibuat" value={formatDateTime(geofence.created_at)} icon={<Clock className="w-3 h-3" />} />
-            <InfoCell label="Diperbarui" value={geofence.updated_at ? formatDateTime(geofence.updated_at) : "-"} />
+            <InfoCell label="Dibuat" value={formatDateTimeSec(geofence.created_at)} icon={<Clock className="w-3 h-3" />} />
+            <InfoCell label="Diperbarui" value={geofence.updated_at ? formatDateTimeSec(geofence.updated_at) : "-"} />
           </div>
           <div className="px-3 py-2.5">
             <InfoCell label="Deskripsi" value={geofence.description || "-"} />
@@ -338,18 +363,13 @@ export default function GeofenceDetailPage() {
       >
         {/* Toolbar filter */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          <div className="relative">
-            <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => {
-                setDateFilter(e.target.value);
-                applyFilters({ date: e.target.value });
-              }}
-              className="pl-8 pr-3 py-2 text-[13px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2964e7]/30"
-            />
-          </div>
+          <DateInput
+            value={dateFilter}
+            onChange={(iso) => {
+              setDateFilter(iso);
+              applyFilters({ date: iso });
+            }}
+          />
           <select
             value={typeFilter}
             onChange={(e) => {
@@ -425,7 +445,7 @@ export default function GeofenceDetailPage() {
                         className="w-full text-left grid grid-cols-12 items-center gap-2 py-2.5 px-1 -mx-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/40 focus:outline-none focus:ring-2 focus:ring-[#2964e7]/30 transition-colors group cursor-pointer"
                       >
                         <span className="col-span-3 text-[12px] text-gray-500 dark:text-gray-400 truncate">
-                          {formatDateTime(ev.event_time)}
+                          {formatDateTimeSec(ev.event_time)}
                         </span>
                         <span className="col-span-2 flex items-center gap-1.5 min-w-0">
                           <span
@@ -482,15 +502,12 @@ export default function GeofenceDetailPage() {
         )}
       </Section>
 
-      {/* Peta: area geofence + titik GPS saat event */}
+      {/* Peta: area geofence (snapshot saat event) + titik GPS saat event */}
       <GeofenceEventMapModal
         open={!!mapEvent}
         onClose={() => setMapEvent(null)}
-        geofence={{
-          name: geofence.name,
-          color: geofence.color,
-          polygon_coords: geofence.polygon_coords,
-        }}
+        geofence={mapArea ? mapArea.geofence : null}
+        areaNote={mapArea ? (mapArea.snapshot ? "Area saat event" : "Area terkini (log lama)") : undefined}
         event={
           mapEvent
             ? {

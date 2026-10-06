@@ -23,7 +23,10 @@ import {
 } from "lucide-react";
 import { adminFetch, getApiErrorMessage } from "../../lib/api";
 import { Section, StatCard, EmptyState } from "../../components/section";
-import { StatusBadge } from "../../components/data-table";
+import { StatusBadge, StatusSwitch } from "../../components/data-table";
+import { useToast, Toast } from "../../components/toast";
+import GeofenceMapModal, { type GeofenceData } from "../../components/geofence-map-modal";
+import { formatDateTimeSec, formatDate, isPastDate } from "@/lib/format-date";
 
 // ---- Tipe data ---------------------------------------------------------------
 
@@ -82,30 +85,15 @@ type Geofence = {
   id: number;
   geofence_id: string;
   name: string;
+  description?: string;
   area_type: string;
   color: string;
   status: number;
+  polygon_coords?: string;
+  min_fixes?: number;
 };
 
 // ---- Helper ------------------------------------------------------------------
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-
-function formatDateTime(value: string): string {
-  if (!value) return "-";
-  const d = new Date(value.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return value;
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} ${hh}:${mm}`;
-}
-
-function formatDate(value: string): string {
-  if (!value) return "-";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-}
 
 function toneClasses(tone: "gray" | "green"): string {
   if (tone === "green") return "bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400";
@@ -130,12 +118,7 @@ function CountBadge({ count, limit }: { count: number; limit: number }) {
 }
 
 function isExpired(dateStr: string): boolean {
-  if (!dateStr) return false;
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return false;
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return d < now;
+  return isPastDate(dateStr);
 }
 
 const RELATED_LIMIT = 100;
@@ -161,6 +144,54 @@ export default function BisnisDetailPage() {
   const [loadingUnassigned, setLoadingUnassigned] = useState(false);
   const [assigning, setAssigning] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // ---- Modal Geofence (map) ----
+  const [geoModalOpen, setGeoModalOpen] = useState(false);
+  const [geoEdit, setGeoEdit] = useState<GeofenceData | null>(null);
+  const [togglingGeoId, setTogglingGeoId] = useState<string | null>(null);
+
+  const { toast, showToast } = useToast();
+
+  // Update status geofence cepat via switch — optimistis, balik kalau gagal.
+  async function toggleGeoStatus(g: Geofence, next: boolean) {
+    const nextStatus = next ? 1 : 0;
+    setTogglingGeoId(g.geofence_id);
+    setGeofences((prev) =>
+      prev.map((r) => (r.geofence_id === g.geofence_id ? { ...r, status: nextStatus } : r)),
+    );
+    const res = await adminFetch(`/geofence/${g.geofence_id}`, {
+      method: "PUT",
+      body: { status: nextStatus },
+    });
+    setTogglingGeoId(null);
+    if (res.status === 1) {
+      showToast(next ? "Geofence diaktifkan" : "Geofence dinonaktifkan");
+    } else {
+      // Balikkan ke status semula kalau gagal.
+      setGeofences((prev) =>
+        prev.map((r) => (r.geofence_id === g.geofence_id ? { ...r, status: g.status } : r)),
+      );
+      showToast(getApiErrorMessage(res, "Gagal update status"), "error");
+    }
+  }
+
+  function openGeoModal(g?: Geofence) {
+    if (g) {
+      setGeoEdit({
+        geofence_id: g.geofence_id,
+        name: g.name,
+        description: g.description || "",
+        area_type: g.area_type || "polygon",
+        color: g.color || "#FF0000",
+        status: g.status ?? 1,
+        polygon_coords: g.polygon_coords || "",
+        min_fixes: g.min_fixes ?? 2,
+      });
+    } else {
+      setGeoEdit(null);
+    }
+    setGeoModalOpen(true);
+  }
 
   const load = useCallback(async () => {
     if (!bisnisId) return;
@@ -333,8 +364,8 @@ export default function BisnisDetailPage() {
             />
           </div>
           <div className="grid grid-cols-2 gap-x-6 px-3 py-2.5">
-            <BisnisInfoCell label="Dibuat" value={formatDateTime(bisnis.created_at)} />
-            <BisnisInfoCell label="Diperbarui" value={bisnis.updated_at ? formatDateTime(bisnis.updated_at) : null} fallback="-" />
+            <BisnisInfoCell label="Dibuat" value={formatDateTimeSec(bisnis.created_at)} />
+            <BisnisInfoCell label="Diperbarui" value={bisnis.updated_at ? formatDateTimeSec(bisnis.updated_at) : null} fallback="-" />
           </div>
         </div>
       </Section>
@@ -458,15 +489,33 @@ export default function BisnisDetailPage() {
         <Section
           icon={<MapIcon className="w-4 h-4" />}
           title="Geofence"
-          headerRight={<CountBadge count={geofences.length} limit={RELATED_LIMIT} />}
+          headerRight={
+            <div className="flex items-center gap-2">
+              <CountBadge count={geofences.length} limit={RELATED_LIMIT} />
+              <button
+                onClick={() => openGeoModal()}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium text-white bg-[#2964e7] rounded-lg hover:bg-[#2150c5] transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Tambah
+              </button>
+            </div>
+          }
         >
           {geofences.length === 0 ? (
             <EmptyState icon={<MapIcon className="w-8 h-8" />} message="Belum ada geofence." />
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-800/60">
               {geofences.map((g) => (
-                <div key={g.geofence_id} className="flex items-center justify-between gap-3 py-2.5">
-                  <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  key={g.geofence_id}
+                  className="flex items-center justify-between gap-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors px-2 -mx-2"
+                >
+                  <button
+                    type="button"
+                    onClick={() => openGeoModal(g)}
+                    className="flex items-center gap-2.5 min-w-0 flex-1 text-left"
+                  >
                     <span
                       className="w-3 h-3 rounded-full shrink-0"
                       style={{ backgroundColor: g.color || "#6b7280" }}
@@ -475,8 +524,18 @@ export default function BisnisDetailPage() {
                       <p className="text-[13px] font-medium text-gray-900 dark:text-white truncate">{g.name}</p>
                       <p className="text-[12px] text-gray-500 truncate">{g.area_type || "-"}</p>
                     </div>
+                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <StatusSwitch
+                      checked={g.status === 1}
+                      loading={togglingGeoId === g.geofence_id}
+                      onChange={(next) => void toggleGeoStatus(g, next)}
+                      title={g.status === 1 ? "Nonaktifkan" : "Aktifkan"}
+                    />
+                    <span className={`text-[12px] w-14 text-right ${g.status === 1 ? "text-green-600 dark:text-green-400" : "text-gray-400"}`}>
+                      {g.status === 1 ? "Aktif" : "Nonaktif"}
+                    </span>
                   </div>
-                  <StatusBadge status={g.status} />
                 </div>
               ))}
             </div>
@@ -554,6 +613,22 @@ export default function BisnisDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Modal Geofence (map) — bisnis terkunci ke bisnis ini */}
+      <GeofenceMapModal
+        open={geoModalOpen}
+        onClose={() => {
+          setGeoModalOpen(false);
+          setGeoEdit(null);
+        }}
+        editGeofence={geoEdit}
+        bisnisId={bisnisId}
+        bisnisName={bisnis?.name || ""}
+        lockBisnis
+        onSaved={() => void load()}
+      />
+
+      <Toast toast={toast} />
     </div>
   );
 }

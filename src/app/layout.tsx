@@ -47,6 +47,7 @@ export default function RootLayout({
     <html
       lang="id"
       suppressHydrationWarning
+      data-scroll-behavior="smooth"
       className={`${inter.variable} h-full antialiased scroll-smooth`}
     >
       <body

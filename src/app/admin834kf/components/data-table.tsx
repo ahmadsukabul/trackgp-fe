@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Search, Plus, RefreshCw, Inbox, RotateCcw } from "lucide-react";
 import { PaginationBar } from "./pagination";
+import AutoRefreshBadge from "./auto-refresh-badge";
 
 /**
  * Jumlah baris minimum di dalam tabel. Kalau data kurang dari ini, sisa barisnya
@@ -59,8 +60,22 @@ type DataTableProps<T> = {
   onPrev?: () => void;
   onNext?: () => void;
   onPageJump?: (page: number) => void;
+
+  // --- Auto-refresh ---
+  autoRefresh?: {
+    enabled: boolean;
+    onToggle: (enabled: boolean) => void;
+    /** Timestamp refresh terakhir (ms), null = belum pernah. */
+    lastAt: number | null;
+    /** Interval polling (ms), untuk tooltip. */
+    intervalMs: number;
+  };
 };
 
+/**
+ * DataTable — tabel list generik halaman admin: header + toolbar pencarian,
+ * filter status, tombol refresh/auto-refresh, badan tabel, dan bar paging keyset.
+ */
 export function DataTable<T extends Record<string, unknown>>({
   title,
   columns,
@@ -83,6 +98,7 @@ export function DataTable<T extends Record<string, unknown>>({
   onPrev,
   onNext,
   onPageJump,
+  autoRefresh,
 }: DataTableProps<T>) {
   // State untuk setiap search field
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
@@ -109,6 +125,14 @@ export function DataTable<T extends Record<string, unknown>>({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h2>
         <div className="flex items-center gap-2">
+          {autoRefresh && (
+            <AutoRefreshBadge
+              enabled={autoRefresh.enabled}
+              onToggle={autoRefresh.onToggle}
+              lastAt={autoRefresh.lastAt}
+              intervalMs={autoRefresh.intervalMs}
+            />
+          )}
           {onRefresh && (
             <button
               onClick={onRefresh}
@@ -302,6 +326,41 @@ export function StatusBadge({ status }: { status: string | number | boolean }) {
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${color}`}>
       {label}
     </span>
+  );
+}
+
+// StatusSwitch — toggle on/off untuk update status cepat di list.
+export function StatusSwitch({
+  checked,
+  onChange,
+  disabled,
+  loading,
+  title,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  disabled?: boolean;
+  loading?: boolean;
+  title?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      title={title}
+      disabled={disabled || loading}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+        checked ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"
+      }`}
+    >
+      <span
+        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+          checked ? "translate-x-[18px]" : "translate-x-[3px]"
+        }`}
+      />
+    </button>
   );
 }
 

@@ -7,11 +7,31 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Landing page — dipakai via var() agar tema ditentukan CSS (.dark), bukan
+     state JS, sehingga markup server & client selalu identik (no hydration mismatch). */
+  --landing-bg: #f5f7fa;
+  --landing-fg: #1e293b;
+  --landing-bar-bg: rgba(255, 255, 255, 0.95);
+  --landing-border: #e2e8f0;
+  --landing-muted: #94a3b8;
+  --landing-pill-border: #e2e8f0;
+  --landing-pill-bg: rgba(255, 255, 255, 0.8);
+  --landing-pill-fg: #475569;
 }
 
 .dark {
   --background: #0b1220;
   --foreground: #f8fafc;
+
+  --landing-bg: #0b1220;
+  --landing-fg: #e2e8f0;
+  --landing-bar-bg: rgba(15, 23, 42, 0.95);
+  --landing-border: #1e293b;
+  --landing-muted: #64748b;
+  --landing-pill-border: #334155;
+  --landing-pill-bg: rgba(30, 41, 59, 0.5);
+  --landing-pill-fg: #cbd5e1;
 }
 
 @theme inline {
@@ -84,3 +104,56 @@ body {
   );
   animation: shine 2.5s ease-in-out infinite;
 }
+
+/* Label kecepatan pada peta rute (Leaflet tooltip permanen). */
+.route-speed-label {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.route-speed-label::before {
+  display: none;
+}
+
+/* Leaflet memakai z-index internal sampai 1000 (pane & kontrol). Tanpa stacking
+   context, pane itu "kabur" ke stacking context halaman dan bisa menimpa drawer
+   / modal (z-50). `isolation: isolate` mengurung seluruh pane di dalam peta. */
+.leaflet-container {
+  isolation: isolate;
+}
+
+/* Penanda mobil yang bergerak mengikuti rute (playback). */
+.route-car-icon {
+  background: transparent;
+  border: none;
+}
+
+.route-car-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  background: #2964e7;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  animation: routeCarPulse 1.8s ease-out infinite;
+}
+
+@keyframes routeCarPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(41, 100, 231, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgba(41, 100, 231, 0), 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+}
+

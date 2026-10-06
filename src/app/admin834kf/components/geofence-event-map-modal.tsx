@@ -3,18 +3,7 @@
 import { useEffect } from "react";
 import { X, MapPin, LogIn, LogOut, Navigation } from "lucide-react";
 import GeofenceAreaMap from "./geofence-area-map";
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-
-/** Format "2006-01-02 15:04:05" → "02 Okt 14:32" (aman terhadap data rusak). */
-function formatEventTime(value: string): string {
-  if (!value) return "-";
-  const d = new Date(value.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return value;
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${hh}:${mm}`;
-}
+import { formatDateTimeSec } from "@/lib/format-date";
 
 export interface EventMapGeofence {
   name: string;
@@ -38,6 +27,11 @@ interface Props {
   /** null = area tidak tersedia (mis. geofence sudah dihapus) — peta tetap tampil dengan titiknya. */
   geofence: EventMapGeofence | null;
   event: EventMapPoint | null;
+  /**
+   * Keterangan kecil di atas peta, mis. "Area saat event" (snapshot) atau
+   * "Area terkini (log lama)". Kosong = tidak ditampilkan.
+   */
+  areaNote?: string;
 }
 
 /**
@@ -48,7 +42,7 @@ interface Props {
  *
  * Hanya mendukung area_type polygon (sesuai keputusan admin panel).
  */
-export default function GeofenceEventMapModal({ open, onClose, geofence, event }: Props) {
+export default function GeofenceEventMapModal({ open, onClose, geofence, event, areaNote }: Props) {
   const hasPoint = event?.lat != null && event?.lng != null;
   const isEnter = event?.event_type === "geofenceEnter";
   const accent = isEnter ? "#16a34a" : "#dc2626";
@@ -97,6 +91,7 @@ export default function GeofenceEventMapModal({ open, onClose, geofence, event }
           <GeofenceAreaMap
             className="absolute inset-0"
             geofence={geofence}
+            note={areaNote}
             point={{ lat: event.lat, lng: event.lng, label: isEnter ? "Titik masuk" : "Titik keluar", color: accent }}
           />
         </div>
@@ -121,7 +116,7 @@ export default function GeofenceEventMapModal({ open, onClose, geofence, event }
             <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-wider text-gray-400 font-medium mb-0.5">Waktu</p>
               <p className="text-[12px] text-gray-900 dark:text-white truncate">
-                {formatEventTime(event.event_time)}
+                {formatDateTimeSec(event.event_time)}
               </p>
             </div>
             <div className="min-w-0">
