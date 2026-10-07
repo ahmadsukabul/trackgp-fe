@@ -5,21 +5,23 @@ import Link from "next/link";
 import { Preview1 } from "./preview1";
 import { Preview2 } from "./preview2";
 import { Preview3 } from "./preview3";
+import { Preview4 } from "./preview4";
 
 const PREVIEWS = [
   { id: "1", label: "Stat-Led", desc: "Metric-first hero, blue accent, floating nav" },
   { id: "2", label: "Bento Grid", desc: "Tile mosaic, coral accent, step-by-step" },
   { id: "3", label: "Workbench", desc: "Dashboard feel, green-cyan, terminal panel" },
+  { id: "4", label: "Ledger", desc: "Data-forward, light warm-neutral, green accent" },
 ] as const;
 
-type PreviewId = "1" | "2" | "3";
+type PreviewId = "1" | "2" | "3" | "4";
 
 function getPreviewFromURL(): PreviewId {
-  if (typeof window === "undefined") return "3";
+  if (typeof window === "undefined") return "4";
   const params = new URLSearchParams(window.location.search);
   const v = params.get("versilanding");
-  if (v === "1" || v === "2" || v === "3") return v;
-  return "3";
+  if (v === "1" || v === "2" || v === "3" || v === "4") return v;
+  return "4";
 }
 
 function hasVersiLandingParam(): boolean {
@@ -28,8 +30,9 @@ function hasVersiLandingParam(): boolean {
 }
 
 export function LandingContent() {
-  const [active, setActive] = useState<PreviewId>("3");
+  const [active, setActive] = useState<PreviewId>("4");
   const [showSelector, setShowSelector] = useState(false);
+  const [selectorHidden, setSelectorHidden] = useState(false);
 
   // Sync URL query param on mount & when query changes
   useEffect(() => {
@@ -69,7 +72,7 @@ export function LandingContent() {
       fontFamily: "'Inter', system-ui, sans-serif",
     }}>
       {/* Preview selector bar — only when ?versilanding exists */}
-      {showSelector && (
+      {showSelector && !selectorHidden && (
       <div style={{
         position: "sticky",
         top: 0,
@@ -109,31 +112,54 @@ export function LandingContent() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {PREVIEWS.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => switchPreview(p.id)}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 6,
-                  height: 34, padding: "0 14px",
-                  borderRadius: 999,
-                  border: `1px solid ${active === p.id ? "#2964e7" : "var(--landing-pill-border)"}`,
-                  background: active === p.id ? "#2964e7" : "var(--landing-pill-bg)",
-                  color: active === p.id ? "white" : "var(--landing-pill-fg)",
-                  fontSize: 12, fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                }}
-              >
-                <span style={{
-                  width: 6, height: 6, borderRadius: "50%",
-                  background: active === p.id ? "white" : "#94a3b8",
-                }} />
-                Preview {p.id}: {p.label}
-              </button>
-            ))}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginLeft: "auto" }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {PREVIEWS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => switchPreview(p.id)}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    height: 34, padding: "0 14px",
+                    borderRadius: 999,
+                    border: `1px solid ${active === p.id ? "#2964e7" : "var(--landing-pill-border)"}`,
+                    background: active === p.id ? "#2964e7" : "var(--landing-pill-bg)",
+                    color: active === p.id ? "white" : "var(--landing-pill-fg)",
+                    fontSize: 12, fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                  }}
+                >
+                  <span style={{
+                    width: 6, height: 6, borderRadius: "50%",
+                    background: active === p.id ? "white" : "#94a3b8",
+                  }} />
+                  Preview {p.id}: {p.label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSelectorHidden(true)}
+              aria-label="Sembunyikan bar pilih template"
+              title="Sembunyikan bar"
+              style={{
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                width: 34, height: 34, flex: "0 0 auto",
+                borderRadius: 999,
+                border: "1px solid var(--landing-pill-border)",
+                background: "var(--landing-pill-bg)",
+                color: "var(--landing-pill-fg)",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -144,6 +170,7 @@ export function LandingContent() {
         {active === "1" && <Preview1 />}
         {active === "2" && <Preview2 />}
         {active === "3" && <Preview3 />}
+        {active === "4" && <Preview4 />}
       </div>
     </div>
   );
