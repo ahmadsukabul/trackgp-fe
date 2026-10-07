@@ -8,7 +8,7 @@
  * modul JS (penyebab error "non-JavaScript MIME type").
  */
 
-const CACHE = "trackgps-mobile-v2";
+const CACHE = "trackgps-mobile-v3";
 const PRECACHE = ["/icons/icon-192.png", "/icons/icon-512.png", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -34,6 +34,17 @@ function isStaticAsset(pathname) {
   );
 }
 
+/** Hanya cache aset non-HTML — mencegah HTML tersimpan untuk path JS/CSS. */
+function isCacheable(res) {
+  const ct = (res.headers.get("content-type") || "").toLowerCase();
+  return (
+    res.status === 200 &&
+    res.type === "basic" &&
+    !ct.includes("text/html") &&
+    !ct.includes("application/json")
+  );
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
@@ -48,7 +59,7 @@ self.addEventListener("fetch", (event) => {
     caches.match(req).then((cached) => {
       if (cached) return cached;
       return fetch(req).then((res) => {
-        if (res && res.status === 200 && res.type === "basic") {
+        if (isCacheable(res)) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
         }

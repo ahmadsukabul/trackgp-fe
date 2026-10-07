@@ -27,7 +27,7 @@ type Item = {
 };
 
 const ITEMS: Item[] = [
-  { href: "/mobile", label: "Beranda", icon: LayoutDashboard, active: (p) => p === "/mobile" },
+  { href: "/mobile", label: "Beranda", icon: LayoutDashboard, active: (p) => p === "/mobile" || p === "/mobile/versi1" },
   { href: "/mobile/gps", label: "Perangkat", icon: Radio, active: (p) => p.startsWith("/mobile/gps") },
   { href: "/mobile/vehicle", label: "Kendaraan", icon: Car, active: (p) => p.startsWith("/mobile/vehicle") },
   { href: "/mobile/invoice", label: "Langganan", icon: ReceiptText, active: (p) => p.startsWith("/mobile/invoice") },
@@ -46,6 +46,7 @@ export default function BottomNav() {
           <Link
             key={it.href}
             href={it.href}
+            prefetch={false}
             className={`m-nav-item${isActive ? " is-active" : ""}`}
             aria-current={isActive ? "page" : undefined}
           >

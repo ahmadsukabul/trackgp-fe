@@ -60,18 +60,35 @@ export default function MapCanvas({
   onSelect,
   fallbackCenter = [106.85, -6.2],
   fallbackZoom = 10,
+  onLoad,
+  className,
+  rounded = true,
+  showLegend = true,
+  showControls = true,
 }: {
   markers: MapMarker[];
-  height?: number;
+  height?: number | string;
   onSelect?: (id: string) => void;
   fallbackCenter?: [number, number];
   fallbackZoom?: number;
+  /** Dipanggil sekali saat style peta selesai dimuat — untuk fade-in kanvas. */
+  onLoad?: () => void;
+  /** Kelas tambahan untuk pembungkus (mis. full-screen di mobile). */
+  className?: string;
+  /** false = tanpa sudut membulat & border (dipakai peta full-screen). */
+  rounded?: boolean;
+  /** false = sembunyikan legenda online/offline/parkir. */
+  showLegend?: boolean;
+  /** false = sembunyikan kontrol zoom bawaan (mobile punya kontrol sendiri). */
+  showControls?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const onLoadRef = useRef(onLoad);
+  onLoadRef.current = onLoad;
 
   // Init peta sekali — pakai OSM raster style.
   useEffect(() => {
@@ -84,10 +101,13 @@ export default function MapCanvas({
       zoom: fallbackZoom,
       attributionControl: { compact: true },
     });
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    if (showControls) {
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    }
     map.on("error", () => {
       /* style offline / tile gagal tidak boleh melempar uncaught error */
     });
+    map.once("load", () => onLoadRef.current?.());
     mapRef.current = map;
 
     const el = containerRef.current;
@@ -173,8 +193,12 @@ export default function MapCanvas({
   }, [markers]);
 
   return (
-    <div className="relative overflow-hidden rounded-xl" style={{ border: "1px solid var(--v1-border)" }}>
+    <div
+      className={`relative overflow-hidden${rounded ? " rounded-xl" : ""}${className ? ` ${className}` : ""}`}
+      style={rounded ? { border: "1px solid var(--v1-border)" } : undefined}
+    >
       <div ref={containerRef} style={{ height, width: "100%" }} />
+      {showLegend && (
       <div
         className="absolute left-3 bottom-3 z-10 flex items-center gap-3 px-3 py-1.5 rounded-lg backdrop-blur"
         style={{
@@ -195,6 +219,7 @@ export default function MapCanvas({
           </span>
         ))}
       </div>
+      )}
     </div>
   );
 }

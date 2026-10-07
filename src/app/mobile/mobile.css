@@ -1,17 +1,20 @@
-/* Hallmark · Client App MOBILE — turunan tema v2 "Ledger" (light-only)
- * Palet sama dengan v2/landing Preview 4: light warm-neutral, Inter-only,
- * aksen hijau #76b900. Layout khusus mobile (app bar + bottom nav + kartu besar).
+/* Hallmark · Client App MOBILE — bahasa desain mobile native (light-only)
+ *
+ * Palet brand tetap (hijau #76b900, warm-neutral), tapi BENTUK & GERAK khas
+ * aplikasi Android — bukan lagi mengikuti v2 yang radius-0/kaku:
+ *   - radius besar (12–28px), elevation lembut, tanpa garis tebal
+ *   - motion emphasized + press feedback + staggered entrance
  *
  * Token --v1-* di-override di scope .mobile-root supaya komponen v1 yang dipakai
- * ulang (MapCanvas, BusinessSwitcher, dst) otomatis bertema mobile tanpa diubah.
+ * ulang (MapCanvas, BusinessSwitcher, dst) otomatis bertema mobile.
  */
 
 .mobile-root {
   /* Permukaan */
-  --v1-paper: #f2f2ef;
+  --v1-paper: #f4f4f1;
   --v1-surface: #ffffff;
-  --v1-surface-raised: #fafaf9;
-  --v1-surface-hover: #f2f2ef;
+  --v1-surface-raised: #fafaf8;
+  --v1-surface-hover: #f1f1ee;
 
   /* Teks */
   --v1-ink: #0f0f0e;
@@ -37,35 +40,53 @@
   --v1-danger-bg: rgba(149, 59, 59, 0.1);
   --v1-danger-border: rgba(149, 59, 59, 0.3);
 
-  /* Sudut 0 penuh (selaras v2) */
-  --v1-radius: 0px;
-  --v1-radius-sm: 0px;
-  --v1-radius-lg: 0px;
-
   /* Inter-only */
   --v1-font-display: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
   --v1-font-body: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
 
-  /* Bayangan hairline */
-  --v1-shadow: 0 1px 2px rgba(15, 15, 14, 0.04);
-  --v1-shadow-md: 0 2px 8px rgba(15, 15, 14, 0.06);
-  --v1-shadow-lg: 0 10px 30px rgba(15, 15, 14, 0.08);
+  /* --- Token bentuk & gerak (bahasa mobile) --- */
+  --m-r-xs: 8px;
+  --m-r-sm: 12px;
+  --m-r-md: 16px;
+  --m-r-lg: 20px;
+  --m-r-xl: 28px;
+  --m-r-full: 999px;
+
+  --m-elev-1: 0 1px 2px rgba(15, 15, 14, 0.05), 0 1px 3px rgba(15, 15, 14, 0.04);
+  --m-elev-2: 0 4px 12px rgba(15, 15, 14, 0.07), 0 1px 3px rgba(15, 15, 14, 0.05);
+  --m-elev-3: 0 12px 32px rgba(15, 15, 14, 0.12), 0 2px 8px rgba(15, 15, 14, 0.06);
+
+  --m-dur-fast: 140ms;
+  --m-dur: 240ms;
+  --m-dur-slow: 380ms;
+  --m-ease: cubic-bezier(0.2, 0, 0, 1);
+  --m-ease-emph: cubic-bezier(0.05, 0.7, 0.1, 1);
+
+  --m-shadow: var(--m-elev-1);
+  --v1-shadow: var(--m-elev-1);
+  --v1-shadow-md: var(--m-elev-2);
+  --v1-shadow-lg: var(--m-elev-3);
   --v1-glow: none;
 
-  /* Skala radius Tailwind v4 -> 0 */
-  --radius: 0px;
-  --radius-xs: 0px;
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  --radius-2xl: 0px;
-  --radius-3xl: 0px;
-  --radius-4xl: 0px;
+  /* Radius lama (dipakai komponen v1) → dibulatkan, bukan 0 */
+  --v1-radius: var(--m-r-sm);
+  --v1-radius-sm: var(--m-r-xs);
+  --v1-radius-lg: var(--m-r-md);
 
-  /* Mobile-specific */
+  /* Skala radius Tailwind v4 → nilai mobile */
+  --radius: var(--m-r-xs);
+  --radius-xs: 6px;
+  --radius-sm: var(--m-r-xs);
+  --radius-md: var(--m-r-sm);
+  --radius-lg: var(--m-r-md);
+  --radius-xl: var(--m-r-lg);
+  --radius-2xl: var(--m-r-xl);
+  --radius-3xl: var(--m-r-xl);
+  --radius-4xl: var(--m-r-xl);
+
+  /* Layout */
   --m-appbar-h: 56px;
-  --m-nav-h: 60px;
+  --m-nav-h: 64px;
   --m-gutter: 16px;
   --m-safe-b: env(safe-area-inset-bottom, 0px);
   --m-safe-t: env(safe-area-inset-top, 0px);
@@ -74,6 +95,8 @@
   color: var(--v1-ink);
   font-family: var(--v1-font-body);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 /* Mobile selalu terang, apa pun theme global */
@@ -88,22 +111,108 @@ html .mobile-root {
   color: var(--v1-ink);
 }
 
-.mobile-root .bg-white,
-.mobile-root [class*="bg-white"] {
-  background-color: var(--v1-surface) !important;
+/* ============================================================
+ * Motion primitives
+ * ============================================================ */
+
+@keyframes m-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-.mobile-root .bg-gray-50,
-.mobile-root [class*="bg-gray-50"],
-.mobile-root .bg-gray-100,
-.mobile-root [class*="bg-gray-100"]:not([class*="animate-pulse"]),
-.mobile-root .bg-gray-200,
-.mobile-root [class*="bg-gray-200"] {
-  background-color: var(--v1-surface-raised) !important;
+@keyframes m-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes m-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes m-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Masuk berurutan; set --i pada tiap item. */
+.m-rise {
+  opacity: 0;
+  animation: m-rise var(--m-dur) var(--m-ease) forwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+.m-fade {
+  animation: m-fade var(--m-dur) var(--m-ease) both;
+}
+
+.m-pop {
+  animation: m-pop var(--m-dur) var(--m-ease) both;
+}
+
+/* Press feedback untuk elemen tappable */
+.m-press {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--m-dur-fast) var(--m-ease),
+    background-color var(--m-dur-fast) var(--m-ease),
+    box-shadow var(--m-dur-fast) var(--m-ease);
+}
+
+.m-press:active {
+  transform: scale(0.97);
+}
+
+/* Skeleton = bentuk final (radius & tinggi disamakan pemanggil) */
+.m-skel {
+  background: linear-gradient(
+    100deg,
+    var(--v1-border-subtle) 30%,
+    #f7f7f4 50%,
+    var(--v1-border-subtle) 70%
+  );
+  background-size: 200% 100%;
+  animation: m-shimmer 1.5s var(--m-ease) infinite;
+  border-radius: var(--m-r-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-rise,
+  .m-fade,
+  .m-pop {
+    opacity: 1;
+    animation: none;
+  }
+  .m-skel {
+    animation: none;
+  }
+  .m-press:active {
+    transform: none;
+  }
 }
 
 /* ============================================================
- * Shell: app bar atas + konten scroll + bottom nav
+ * Shell: app bar + konten + bottom nav
  * ============================================================ */
 
 .m-shell {
@@ -119,27 +228,23 @@ html .mobile-root {
   z-index: 40;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   height: calc(var(--m-appbar-h) + var(--m-safe-t));
-  padding: var(--m-safe-t) var(--m-gutter) 0;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--v1-border);
+  padding: var(--m-safe-t) 12px 0;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+}
+
+.m-appbar.has-line {
+  border-bottom: 1px solid var(--v1-border-subtle);
 }
 
 .m-appbar-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.3px;
   color: var(--v1-ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.m-appbar-sub {
-  font-size: 11px;
-  color: var(--v1-ink-faint);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -149,29 +254,33 @@ html .mobile-root {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   flex: 0 0 auto;
+  border-radius: var(--m-r-full);
   background: none;
   border: none;
   color: var(--v1-ink-muted);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--m-dur-fast) var(--m-ease), transform var(--m-dur-fast) var(--m-ease);
 }
 
 .m-iconbtn:active {
-  background: var(--v1-surface-raised);
+  background: var(--v1-surface-hover);
+  transform: scale(0.94);
 }
 
 .m-main {
   flex: 1 1 auto;
   padding: var(--m-gutter);
-  padding-bottom: calc(var(--m-nav-h) + var(--m-safe-b) + 20px);
+  padding-bottom: calc(var(--m-nav-h) + var(--m-safe-b) + 24px);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
 }
 
-/* Bottom nav */
+/* Bottom nav dengan pill indicator */
 .m-nav {
   position: fixed;
   left: 0;
@@ -183,9 +292,10 @@ html .mobile-root {
   grid-auto-columns: 1fr;
   height: calc(var(--m-nav-h) + var(--m-safe-b));
   padding-bottom: var(--m-safe-b);
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--v1-border);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  border-top: 1px solid var(--v1-border-subtle);
 }
 
 .m-nav-item {
@@ -200,7 +310,20 @@ html .mobile-root {
   font-weight: 600;
   letter-spacing: -0.1px;
   -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s;
+  transition: color var(--m-dur) var(--m-ease);
+}
+
+.m-nav-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-width: 30px;
+  padding: 0 13px;
+  border-radius: var(--m-r-full);
+  transition:
+    background-color var(--m-dur) var(--m-ease),
+    color var(--m-dur) var(--m-ease);
 }
 
 .m-nav-item.is-active {
@@ -208,33 +331,22 @@ html .mobile-root {
 }
 
 .m-nav-item.is-active .m-nav-ico {
-  color: var(--v1-accent);
-}
-
-.m-nav-ico {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 26px;
-}
-
-.m-nav-item.is-active .m-nav-ico::after {
-  content: "";
-  position: absolute;
-  inset: 0;
   background: var(--v1-accent-light);
-  z-index: -1;
+  color: var(--v1-accent-dim);
+}
+
+.m-nav-item:active .m-nav-ico {
+  background: var(--v1-surface-hover);
 }
 
 /* ============================================================
- * Komponen umum mobile
+ * Kartu & komponen dasar
  * ============================================================ */
 
 .m-card {
   background: var(--v1-surface);
-  border: 1px solid var(--v1-border);
+  border-radius: var(--m-r-md);
+  box-shadow: var(--m-elev-1);
 }
 
 .m-card-pad {
@@ -242,12 +354,19 @@ html .mobile-root {
 }
 
 .m-section-title {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.4px;
+  letter-spacing: -0.2px;
+  color: var(--v1-ink);
+  margin: 0 0 10px;
+}
+
+.m-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
   color: var(--v1-ink-faint);
-  margin: 0 0 8px;
 }
 
 .m-row {
@@ -263,41 +382,115 @@ html .mobile-root {
   gap: 12px;
 }
 
+.m-muted {
+  color: var(--v1-ink-muted);
+}
+
+.m-faint {
+  color: var(--v1-ink-faint);
+}
+
+/* Chip */
+.m-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--m-r-full);
+  background: var(--v1-surface);
+  border: 1px solid var(--v1-border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--v1-ink-muted);
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--m-dur-fast) var(--m-ease), color var(--m-dur-fast) var(--m-ease),
+    border-color var(--m-dur-fast) var(--m-ease), transform var(--m-dur-fast) var(--m-ease);
+}
+
+.m-chip:active {
+  transform: scale(0.96);
+}
+
+.m-chip.is-active {
+  background: var(--v1-ink);
+  border-color: var(--v1-ink);
+  color: #fff;
+}
+
+.m-chip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 2px;
+}
+
+.m-chip-row::-webkit-scrollbar {
+  display: none;
+}
+
+/* Grid statistik */
 .m-stat-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 12px;
 }
 
 .m-stat {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 14px;
+  padding: 16px;
   background: var(--v1-surface);
-  border: 1px solid var(--v1-border);
+  border-radius: var(--m-r-md);
+  box-shadow: var(--m-elev-1);
   text-decoration: none;
+  color: var(--v1-ink);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--m-dur-fast) var(--m-ease), box-shadow var(--m-dur-fast) var(--m-ease);
+}
+
+.m-stat:active {
+  transform: scale(0.98);
+}
+
+.m-stat-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--m-r-sm);
+  background: var(--v1-accent-light);
+  color: var(--v1-accent-dim);
 }
 
 .m-stat-value {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
   color: var(--v1-ink);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .m-stat-label {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--v1-ink-muted);
 }
 
+/* List */
 .m-list {
   display: flex;
   flex-direction: column;
   background: var(--v1-surface);
-  border: 1px solid var(--v1-border);
+  border-radius: var(--m-r-md);
+  box-shadow: var(--m-elev-1);
+  overflow: hidden;
 }
 
 .m-list-item {
@@ -309,6 +502,7 @@ html .mobile-root {
   text-decoration: none;
   color: var(--v1-ink);
   -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--m-dur-fast) var(--m-ease);
 }
 
 .m-list-item:last-child {
@@ -316,24 +510,54 @@ html .mobile-root {
 }
 
 .m-list-item:active {
-  background: var(--v1-surface-raised);
+  background: var(--v1-surface-hover);
 }
 
+.m-list-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: var(--m-r-sm);
+  background: var(--v1-surface-raised);
+  color: var(--v1-ink-muted);
+}
+
+.m-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: var(--m-r-full);
+  font-weight: 700;
+}
+
+/* Tombol */
 .m-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 44px;
-  padding: 0 16px;
-  font-size: 14px;
-  font-weight: 600;
+  min-height: 48px;
+  padding: 0 18px;
+  font-size: 14.5px;
+  font-weight: 700;
   font-family: var(--v1-font-body);
+  border-radius: var(--m-r-sm);
   border: 1px solid var(--v1-border);
   background: var(--v1-surface);
   color: var(--v1-ink);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: transform var(--m-dur-fast) var(--m-ease), background-color var(--m-dur-fast) var(--m-ease);
+}
+
+.m-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .m-btn:disabled {
@@ -355,40 +579,32 @@ html .mobile-root {
   width: 100%;
 }
 
+/* Input */
 .m-input {
   width: 100%;
-  min-height: 46px;
-  padding: 0 14px;
+  min-height: 50px;
+  padding: 0 16px;
   font-size: 15px;
   font-family: var(--v1-font-body);
-  background: var(--v1-surface);
-  border: 1px solid var(--v1-border);
-  border-radius: 0;
+  background: var(--v1-surface-raised);
+  border: 1.5px solid transparent;
+  border-radius: var(--m-r-sm);
   color: var(--v1-ink);
   outline: none;
+  transition: border-color var(--m-dur-fast) var(--m-ease), background-color var(--m-dur-fast) var(--m-ease);
 }
 
 .m-input:focus {
+  background: var(--v1-surface);
   border-color: var(--v1-accent);
-  box-shadow: 0 0 0 3px var(--v1-accent-light);
 }
 
 .m-label {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
   color: var(--v1-ink-muted);
   margin-bottom: 7px;
-}
-
-.m-muted {
-  color: var(--v1-ink-muted);
-}
-
-.m-faint {
-  color: var(--v1-ink-faint);
 }
 
 .m-empty {
@@ -397,19 +613,756 @@ html .mobile-root {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 40px 20px;
+  padding: 44px 20px;
   text-align: center;
   color: var(--v1-ink-faint);
-  border: 1px dashed var(--v1-border);
+  border-radius: var(--m-r-md);
+  border: 1.5px dashed var(--v1-border);
 }
 
 .m-error {
-  padding: 12px 14px;
+  padding: 13px 15px;
   font-size: 13px;
   line-height: 1.5;
+  border-radius: var(--m-r-sm);
   background: var(--v1-danger-bg);
-  border: 1px solid var(--v1-danger-border);
   color: var(--v1-danger);
+}
+
+/* ============================================================
+ * Home — greeting, hero status armada, quick actions
+ * ============================================================ */
+
+.m-home-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.m-greeting {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  color: var(--v1-ink);
+  margin: 0;
+  line-height: 1.15;
+}
+
+.m-greeting-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--v1-ink-muted);
+}
+
+/* Kartu status armada — gelap + aksen hijau */
+.m-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  border-radius: var(--m-r-lg);
+  background: linear-gradient(160deg, #17170f 0%, #0f0f0e 60%);
+  color: #fff;
+  box-shadow: var(--m-elev-2);
+}
+
+.m-hero::after {
+  content: "";
+  position: absolute;
+  right: -60px;
+  top: -70px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(118, 185, 0, 0.32), rgba(118, 185, 0, 0) 70%);
+  pointer-events: none;
+}
+
+.m-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.m-hero-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.m-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--m-r-full);
+  background: rgba(118, 185, 0, 0.16);
+  color: #a6e04a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.m-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #76b900;
+  box-shadow: 0 0 0 0 rgba(118, 185, 0, 0.6);
+  animation: m-pulse 1.8s var(--m-ease) infinite;
+}
+
+@keyframes m-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(118, 185, 0, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(118, 185, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(118, 185, 0, 0);
+  }
+}
+
+.m-hero-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 14px 0 4px;
+}
+
+.m-hero-value {
+  font-size: 46px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.m-hero-of {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.m-hero-bar {
+  display: flex;
+  gap: 3px;
+  height: 8px;
+  margin: 16px 0 12px;
+}
+
+.m-hero-seg {
+  border-radius: var(--m-r-full);
+  transition: width var(--m-dur-slow) var(--m-ease-emph);
+}
+
+.m-hero-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.m-hero-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.m-hero-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.m-hero-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.m-hero-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--m-r-full);
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.m-hero-refresh:active {
+  transform: scale(0.92);
+}
+
+/* Quick actions */
+.m-quick {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.m-quick-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+  color: var(--v1-ink-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.m-quick-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--m-r-md);
+  background: var(--v1-surface);
+  box-shadow: var(--m-elev-1);
+  color: var(--v1-ink);
+  transition: transform var(--m-dur-fast) var(--m-ease);
+}
+
+.m-quick-item:active .m-quick-ico {
+  transform: scale(0.92);
+}
+
+/* ============================================================
+ * Versi 1 — eksperimen beranda mobile
+ * ============================================================ */
+
+.mv1-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mv1-hello {
+  margin: 0;
+  font-size: 15px;
+  color: var(--v1-ink-muted);
+}
+
+.mv1-name {
+  margin: 3px 0 0;
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  color: var(--v1-ink);
+  line-height: 1.1;
+}
+
+.mv1-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.mv1-square {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border: none;
+  border-radius: var(--m-r-sm);
+  background: var(--v1-surface);
+  box-shadow: var(--m-elev-1);
+  color: var(--v1-ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--m-dur-fast) var(--m-ease);
+}
+
+.mv1-square:active {
+  transform: scale(0.94);
+}
+
+.mv1-avatar {
+  background: var(--v1-accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  cursor: default;
+}
+
+.mv1-dot {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #e5484d;
+  border: 2px solid var(--v1-surface);
+}
+
+.mv1-card {
+  display: block;
+  padding: 16px;
+  background: var(--v1-surface);
+  border-radius: var(--m-r-md);
+  box-shadow: var(--m-elev-1);
+  text-decoration: none;
+  color: var(--v1-ink);
+}
+
+.mv1-label {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--v1-ink-muted);
+}
+
+.mv1-sample {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--v1-surface-raised);
+  color: var(--v1-ink-faint);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.mv1-metric {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mv1-value {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+  color: var(--v1-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.mv1-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 10px;
+  flex: 0 0 auto;
+  border-radius: var(--m-r-xs);
+  background: var(--v1-accent-light);
+  color: var(--v1-success);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.mv1-chart {
+  display: block;
+  margin-top: 10px;
+}
+
+.mv1-donut-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.mv1-legend {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  min-width: 0;
+}
+
+.mv1-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--v1-ink);
+}
+
+.mv1-legend-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.mv1-legend-val {
+  margin-left: auto;
+  font-weight: 800;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mv1-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mv1-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--m-dur-fast) var(--m-ease);
+}
+
+.mv1-mini:active {
+  transform: scale(0.98);
+}
+
+.mv1-mini-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mv1-mini-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--m-r-sm);
+}
+
+.mv1-mini-val {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  color: var(--v1-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.mv1-mini-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v1-ink-muted);
+}
+
+.mv1-sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mv1-sec-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--v1-ink);
+}
+
+.mv1-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--v1-accent-dim);
+  text-decoration: none;
+}
+
+.mv1-trip {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mv1-trip-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mv1-trip-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: var(--m-r-sm);
+  background: var(--v1-accent-light);
+  color: var(--v1-success);
+}
+
+.mv1-trip-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--v1-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mv1-trip-sub {
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--v1-ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mv1-trip-right {
+  margin-left: auto;
+  flex: 0 0 auto;
+  color: var(--v1-success);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.mv1-bar {
+  height: 7px;
+  border-radius: var(--m-r-full);
+  background: var(--v1-border-subtle);
+  overflow: hidden;
+}
+
+.mv1-bar-fill {
+  height: 100%;
+  border-radius: var(--m-r-full);
+  background: var(--v1-accent);
+  transition: width var(--m-dur-slow) var(--m-ease-emph);
+}
+
+/* ============================================================
+ * Bottom sheet (generik) & drawer peta
+ * ============================================================ */
+
+.m-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(15, 15, 14, 0.38);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--m-dur) var(--m-ease);
+}
+
+.m-sheet-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.m-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 81;
+  display: flex;
+  flex-direction: column;
+  max-height: 88dvh;
+  background: var(--v1-surface);
+  border-radius: var(--m-r-xl) var(--m-r-xl) 0 0;
+  box-shadow: var(--m-elev-3);
+  padding-bottom: var(--m-safe-b);
+  transform: translateY(100%);
+  transition: transform var(--m-dur-slow) var(--m-ease-emph);
+  will-change: transform;
+}
+
+.m-sheet.is-open {
+  transform: translateY(0);
+}
+
+.m-sheet-grip {
+  flex: 0 0 auto;
+  padding: 10px 0 6px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.m-sheet-grip::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 0 auto;
+  border-radius: var(--m-r-full);
+  background: var(--v1-border);
+}
+
+.m-sheet-head {
+  flex: 0 0 auto;
+  padding: 4px 20px 12px;
+}
+
+.m-sheet-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin: 0;
+  color: var(--v1-ink);
+}
+
+.m-sheet-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 12px 12px;
+}
+
+/* Drawer peta — menempel di atas bottom nav */
+.m-drawer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--m-nav-h) + var(--m-safe-b));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--v1-surface);
+  border-radius: var(--m-r-xl) var(--m-r-xl) 0 0;
+  box-shadow: var(--m-elev-3);
+  transition: transform var(--m-dur-slow) var(--m-ease-emph);
+  will-change: transform;
+  overflow: hidden;
+}
+
+.m-drawer.dragging {
+  transition: none;
+}
+
+.m-drawer-head {
+  flex: 0 0 auto;
+}
+
+.m-drawer-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 12px calc(12px + var(--m-safe-b));
+}
+
+/* Halaman peta full-screen */
+.m-map-page {
+  position: fixed;
+  inset: 0;
+  bottom: calc(var(--m-nav-h) + var(--m-safe-b));
+  z-index: 1;
+}
+
+.m-map-canvas {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--m-dur-slow) var(--m-ease);
+}
+
+.m-map-canvas.is-ready {
+  opacity: 1;
+}
+
+.m-map-skeleton {
+  position: absolute;
+  inset: 0;
+  background: var(--v1-surface-raised);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--v1-ink-faint);
+  gap: 10px;
+  font-size: 13px;
+  transition: opacity var(--m-dur) var(--m-ease);
+}
+
+.m-map-skeleton.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.m-map-topbar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: calc(var(--m-safe-t) + 12px);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.m-map-search {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 14px;
+  border-radius: var(--m-r-full);
+  background: var(--v1-surface);
+  box-shadow: var(--m-elev-2);
+}
+
+.m-map-search input {
+  flex: 1 1 auto;
+  border: none;
+  outline: none;
+  background: none;
+  font-size: 14px;
+  font-family: var(--v1-font-body);
+  color: var(--v1-ink);
+  min-width: 0;
+}
+
+.m-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: var(--m-r-full);
+  border: none;
+  background: var(--v1-surface);
+  color: var(--v1-ink);
+  box-shadow: var(--m-elev-2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--m-dur-fast) var(--m-ease);
+}
+
+.m-fab:active {
+  transform: scale(0.92);
+}
+
+.m-fab-accent {
+  background: var(--v1-ink);
+  color: #fff;
 }
 
 /* ============================================================
@@ -458,20 +1411,20 @@ html .mobile-root {
 
 .m-onboard-art {
   width: 100%;
-  max-width: 280px;
+  max-width: 260px;
   aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--v1-surface-raised);
-  border: 1px solid var(--v1-border);
-  color: var(--v1-accent);
+  border-radius: var(--m-r-xl);
+  background: var(--v1-accent-light);
+  color: var(--v1-accent-dim);
 }
 
 .m-onboard-title {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
   color: var(--v1-ink);
   margin: 0;
 }
@@ -500,12 +1453,13 @@ html .mobile-root {
 .m-dot {
   width: 8px;
   height: 8px;
+  border-radius: var(--m-r-full);
   background: var(--v1-border);
-  transition: width 0.2s, background 0.2s;
+  transition: width var(--m-dur) var(--m-ease), background var(--m-dur) var(--m-ease);
 }
 
 .m-dot.is-active {
-  width: 22px;
+  width: 24px;
   background: var(--v1-accent);
 }
 
@@ -520,7 +1474,7 @@ html .mobile-root {
 }
 
 /* ============================================================
- * Login mobile
+ * Login
  * ============================================================ */
 
 .m-login {
@@ -543,18 +1497,19 @@ html .mobile-root {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--m-r-sm);
   background: var(--v1-ink);
   color: #fff;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
   letter-spacing: -0.5px;
 }
 
 .m-login-wordmark {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.3px;
   color: var(--v1-ink);
 }
@@ -570,7 +1525,7 @@ html .mobile-root {
 }
 
 .m-login-passwrap .m-input {
-  padding-right: 46px;
+  padding-right: 48px;
 }
 
 .m-login-eye {
@@ -601,10 +1556,12 @@ html .mobile-root {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 14px;
+  border-radius: var(--m-r-md);
   background: var(--v1-ink);
   color: #fff;
-  box-shadow: 0 8px 24px rgba(15, 15, 14, 0.28);
+  box-shadow: var(--m-elev-3);
+  animation: m-pop var(--m-dur-slow) var(--m-ease-emph) both;
 }
 
 .m-install-text {
@@ -626,6 +1583,7 @@ html .mobile-root {
   flex: 0 0 auto;
   min-height: 34px;
   padding: 0 14px;
+  border-radius: var(--m-r-full);
   background: var(--v1-accent);
   color: #0f0f0e;
   border: none;
@@ -641,9 +1599,4 @@ html .mobile-root {
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   padding: 6px;
-}
-
-/* Sembunyikan scrollbar horizontal tak sengaja */
-.mobile-root {
-  overflow-x: hidden;
 }

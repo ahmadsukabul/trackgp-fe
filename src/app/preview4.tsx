@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import "./preview4.css";
+import { TrackgpLogo } from "./_brand/logo";
 
 /* === Data ================================================================ */
 
@@ -859,8 +860,7 @@ export function Preview4() {
       <header className="p4-nav">
         <div className="p4-container p4-nav-inner">
           <Link href="/" className="p4-brand">
-            <span className="p4-brand-mark">TG</span>
-            TrackGPS
+            <TrackgpLogo height={24} />
           </Link>
           <ul className="p4-nav-links">
             <li><a href="#fitur">Fitur</a></li>
@@ -1300,8 +1300,7 @@ export function Preview4() {
           <div className="p4-footer-cols">
             <div>
               <div className="p4-footer-brand">
-                <span className="p4-footer-brand-mark">TG</span>
-                TrackGPS
+                <TrackgpLogo height={26} />
               </div>
               <p className="p4-footer-desc">
                 Pemasangan GPS & server monitoring real-time untuk semua jenis

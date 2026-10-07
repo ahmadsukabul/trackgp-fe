@@ -23,7 +23,7 @@ import { formatDate, formatDateTimeSec, formatRelative } from "@/lib/format-date
 import { expiryDaysLeft, expiryStatus } from "@/lib/expiry";
 import { MStatus } from "../../../_ui";
 
-const Map = dynamic(() => import("../../../../v1/components/MapCanvas"), {
+const Map = dynamic(() => import("@/app/v1/components/MapCanvas"), {
   ssr: false,
   loading: () => <div style={{ height: 240, background: "var(--v1-surface-raised)" }} />,
 });

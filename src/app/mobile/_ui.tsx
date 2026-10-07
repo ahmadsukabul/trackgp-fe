@@ -12,6 +12,7 @@ export function MStatus({ value }: { value: string }) {
         padding: "2px 8px",
         fontSize: 11,
         fontWeight: 600,
+        borderRadius: 999,
         background: online ? "var(--v1-success-bg)" : "var(--v1-surface-raised)",
         color: online ? "var(--v1-success)" : "var(--v1-ink-faint)",
       }}
@@ -20,6 +21,7 @@ export function MStatus({ value }: { value: string }) {
         style={{
           width: 6,
           height: 6,
+          borderRadius: 999,
           background: online ? "var(--v1-success)" : "var(--v1-ink-faint)",
         }}
       />

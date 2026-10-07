@@ -6,6 +6,7 @@ import { Preview1 } from "./preview1";
 import { Preview2 } from "./preview2";
 import { Preview3 } from "./preview3";
 import { Preview4 } from "./preview4";
+import { TrackgpLogo } from "./_brand/logo";
 
 const PREVIEWS = [
   { id: "1", label: "Stat-Led", desc: "Metric-first hero, blue accent, floating nav" },
@@ -92,24 +93,12 @@ export function LandingContent() {
           gap: 12,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <TrackgpLogo height={22} />
             <span style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              width: 32, height: 32,
-              background: "#2964e7",
-              color: "white",
-              borderRadius: 8,
-              fontSize: 12, fontWeight: 800,
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
-            }}>TG</span>
-            <div>
-              <span style={{ fontSize: 14, fontWeight: 700 }}>TrackGPS</span>
-              <span style={{
-                marginLeft: 8,
-                fontSize: 11,
-                color: "var(--landing-muted)",
-                fontWeight: 500,
-              }}>Landing Page Previews</span>
-            </div>
+              fontSize: 11,
+              color: "var(--landing-muted)",
+              fontWeight: 500,
+            }}>Landing Page Previews</span>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginLeft: "auto" }}>
