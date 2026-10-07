@@ -4,9 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import CrudPage, { type Column } from "../components/CrudPage";
 import ConfirmModal from "../components/ConfirmModal";
 import GeofenceMapModal from "../components/GeofenceMapModal";
+import GeofenceEventMapModal from "../components/GeofenceEventMapModal";
+import PaginationBar from "../components/PaginationBar";
 import { useBusiness } from "../lib/BusinessContext";
 import { MENU } from "../lib/menu";
 import { getApiErrorMessage } from "../lib/api";
+import { useKeysetPaging } from "../lib/use-keyset-paging";
 import {
   geofenceList,
   geofenceDelete,
@@ -14,7 +17,7 @@ import {
   type Geofence,
   type GPSEvent,
 } from "../lib/client";
-import { LogIn, LogOut, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { LogIn, LogOut, RefreshCw, ChevronDown, ChevronUp, MapPinned } from "lucide-react";
 import { formatDateTimeSec } from "@/lib/format-date";
 
 /** Hitung jumlah titik dari polygon_coords JSON (aman terhadap data rusak). */
@@ -39,6 +42,74 @@ function fenceName(attributesJson: string): string {
   }
 }
 
+/** Ambil nama device dari attributes_json bila ada (fallback device_id). */
+function deviceLabel(ev: GPSEvent): string {
+  if (ev.attributes_json) {
+    try {
+      const attrs = JSON.parse(ev.attributes_json);
+      const name = attrs?.device_name || attrs?.name;
+      if (typeof name === "string" && name) return name;
+    } catch { /* ignore */ }
+  }
+  return ev.device_id;
+}
+
+/**
+ * Titik GPS saat event. Engine geofence menulis {lat,lng} ke attributes_json
+ * setiap kali fire, jadi koordinatnya selalu ada untuk event baru. Kembalikan
+ * null bila data hilang/rusak supaya modal tetap bisa dibuka.
+ */
+function eventPoint(ev: GPSEvent): { lat: number | null; lng: number | null } {
+  if (ev.attributes_json) {
+    try {
+      const attrs = JSON.parse(ev.attributes_json);
+      const lat = Number(attrs?.lat);
+      const lng = Number(attrs?.lng);
+      if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) {
+        return { lat, lng };
+      }
+    } catch { /* ignore */ }
+  }
+  return { lat: null, lng: null };
+}
+
+/**
+ * Area geofence yang dirender di peta log. Prioritas:
+ *  1. Snapshot di attributes_json (kondisi area SAAT event terjadi) — akurat
+ *     walau geofence kemudian diedit/dihapus.
+ *  2. Record geofence terkini — fallback untuk event lama yang belum punya
+ *     snapshot.
+ * `snapshot` = true berarti area berasal dari snapshot.
+ */
+function eventArea(
+  ev: GPSEvent,
+  list: Geofence[],
+): { geofence: { name: string; color: string; polygon_coords: string }; snapshot: boolean } | null {
+  if (ev.attributes_json) {
+    try {
+      const attrs = JSON.parse(ev.attributes_json);
+      const poly = typeof attrs?.fence_polygon === "string" ? attrs.fence_polygon : "";
+      if (poly) {
+        return {
+          geofence: {
+            name: typeof attrs?.fence_name === "string" && attrs.fence_name ? attrs.fence_name : "Geofence",
+            color: typeof attrs?.fence_color === "string" && attrs.fence_color ? attrs.fence_color : "#FF0000",
+            polygon_coords: poly,
+          },
+          snapshot: true,
+        };
+      }
+    } catch { /* ignore */ }
+  }
+
+  const current = list.find((g) => g.geofence_id === ev.geofence_id);
+  if (!current) return null;
+  return {
+    geofence: { name: current.name, color: current.color, polygon_coords: current.polygon_coords },
+    snapshot: false,
+  };
+}
+
 export default function GeofencePage() {
   const { can } = useBusiness();
   const allowed = can(MENU.geofence);
@@ -53,11 +124,9 @@ export default function GeofencePage() {
   const [toDelete, setToDelete] = useState<Geofence | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Log masuk/keluar area
+  // Log masuk/keluar area (paging keyset) + event yang sedang dilihat di peta.
   const [showLog, setShowLog] = useState(true);
-  const [events, setEvents] = useState<GPSEvent[]>([]);
-  const [eventsLoading, setEventsLoading] = useState(false);
-  const [eventsError, setEventsError] = useState("");
+  const [mapEvent, setMapEvent] = useState<GPSEvent | null>(null);
 
   const load = useCallback(async () => {
     if (!allowed) {
@@ -73,23 +142,14 @@ export default function GeofencePage() {
     setLoading(false);
   }, [allowed]);
 
-  const loadEvents = useCallback(async () => {
-    if (!allowed) return;
-    setEventsLoading(true);
-    setEventsError("");
-    const res = await geofenceEvents({ limit: 50 });
-    if (res.status === 1 && Array.isArray(res.data)) setEvents(res.data);
-    else setEventsError(getApiErrorMessage(res, "Gagal memuat log geofence."));
-    setEventsLoading(false);
-  }, [allowed]);
+  const paging = useKeysetPaging<GPSEvent>({
+    enabled: allowed,
+    fetchPage: ({ last_id, limit }) => geofenceEvents({ last_id, limit }),
+  });
 
   useEffect(() => {
     load();
   }, [load]);
-
-  useEffect(() => {
-    loadEvents();
-  }, [loadEvents]);
 
   function openAdd() {
     setEditing(null);
@@ -109,7 +169,7 @@ export default function GeofencePage() {
     setToDelete(null);
     if (res.status === 1) {
       await load();
-      await loadEvents();
+      await paging.reload();
     } else setError(getApiErrorMessage(res, "Gagal menghapus geofence."));
   }
 
@@ -177,6 +237,8 @@ export default function GeofencePage() {
     },
   ];
 
+  const mapArea = mapEvent ? eventArea(mapEvent, rows) : null;
+
   return (
     <>
       <CrudPage<Geofence>
@@ -187,7 +249,7 @@ export default function GeofencePage() {
         loading={loading}
         error={allowed ? error : ""}
         searchPlaceholder="Cari nama geofence..."
-        addLabel="Tambah Geofence"
+        addLabel="Tambah"
         canAdd={allowed}
         rowKey={(g) => g.geofence_id}
         onRefresh={load}
@@ -206,7 +268,7 @@ export default function GeofencePage() {
       {/* Log masuk/keluar area */}
       {allowed && (
         <section
-          className="mt-5 rounded-2xl overflow-hidden"
+          className="mt-5 max-w-[1400px] rounded-2xl overflow-hidden"
           style={{ background: "var(--v1-surface)", border: "1px solid var(--v1-border)" }}
         >
           <button
@@ -220,19 +282,19 @@ export default function GeofencePage() {
                 className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold"
                 style={{ background: "var(--v1-surface-raised)", color: "var(--v1-ink-muted)" }}
               >
-                {events.length}
+                {paging.rows.length}
               </span>
             </span>
             <span className="flex items-center gap-2">
               <span
                 role="button"
                 tabIndex={0}
-                onClick={(e) => { e.stopPropagation(); void loadEvents(); }}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); void loadEvents(); } }}
+                onClick={(e) => { e.stopPropagation(); void paging.reload(); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); void paging.reload(); } }}
                 className="p-1.5 rounded-lg"
                 style={{ color: "var(--v1-ink-faint)" }}
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${eventsLoading ? "animate-spin" : ""}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${paging.loading ? "animate-spin" : ""}`} />
               </span>
               {showLog ? (
                 <ChevronUp className="w-4 h-4" style={{ color: "var(--v1-ink-faint)" }} />
@@ -244,51 +306,104 @@ export default function GeofencePage() {
 
           {showLog && (
             <div style={{ borderTop: "1px solid var(--v1-border-subtle)" }}>
-              {eventsError ? (
-                <p className="px-4 py-3 text-[12px]" style={{ color: "var(--v1-danger)" }}>{eventsError}</p>
-              ) : events.length === 0 ? (
+              {paging.error ? (
+                <p className="px-4 py-3 text-[12px]" style={{ color: "var(--v1-danger)" }}>{paging.error}</p>
+              ) : paging.rows.length === 0 ? (
                 <p className="px-4 py-6 text-center text-[12px]" style={{ color: "var(--v1-ink-faint)" }}>
-                  {eventsLoading ? "Memuat..." : "Belum ada kendaraan yang masuk/keluar area."}
+                  {paging.loading ? "Memuat..." : "Belum ada kendaraan yang masuk/keluar area."}
                 </p>
               ) : (
-                <ul className="divide-y" style={{ borderColor: "var(--v1-border-subtle)" }}>
-                  {events.map((ev) => {
-                    const isEnter = ev.event_type === "geofenceEnter";
-                    return (
-                      <li key={ev.event_id} className="flex items-center gap-3 px-4 py-2.5">
-                        <span
-                          className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full"
-                          style={{
-                            background: isEnter ? "var(--v1-success-bg)" : "var(--v1-danger-bg)",
-                            color: isEnter ? "var(--v1-success)" : "var(--v1-danger)",
+                <>
+                  <ul>
+                    {paging.rows.map((ev) => {
+                      const isEnter = ev.event_type === "geofenceEnter";
+                      const pt = eventPoint(ev);
+                      const hasPoint = pt.lat !== null && pt.lng !== null;
+                      return (
+                        <li
+                          key={ev.event_id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setMapEvent(ev)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setMapEvent(ev);
+                            }
                           }}
+                          title={hasPoint ? "Lihat titik di peta" : "Event ini tidak menyimpan koordinat"}
+                          className="group flex items-center gap-3 px-4 py-2.5 border-b last:border-0 cursor-pointer transition-colors hover:bg-(--v1-surface-raised) focus:outline-none"
+                          style={{ borderBottomColor: "var(--v1-border-subtle)" }}
                         >
-                          {isEnter ? <LogIn className="w-3.5 h-3.5" /> : <LogOut className="w-3.5 h-3.5" />}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[13px] truncate" style={{ color: "var(--v1-ink)" }}>
-                            <span className="font-semibold">{fenceName(ev.attributes_json)}</span>
-                            <span style={{ color: "var(--v1-ink-muted)" }}>
-                              {" — "}
-                              {isEnter ? "masuk" : "keluar"}
-                            </span>
-                          </p>
-                          <p className="text-[11px] truncate" style={{ color: "var(--v1-ink-faint)" }}>
-                            {ev.device_id}
-                          </p>
-                        </div>
-                        <span className="shrink-0 text-[11px]" style={{ color: "var(--v1-ink-faint)" }}>
-                          {formatDateTimeSec(ev.event_time)}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
+                          <span
+                            className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full"
+                            style={{
+                              background: isEnter ? "var(--v1-success-bg)" : "var(--v1-danger-bg)",
+                              color: isEnter ? "var(--v1-success)" : "var(--v1-danger)",
+                            }}
+                          >
+                            {isEnter ? <LogIn className="w-3.5 h-3.5" /> : <LogOut className="w-3.5 h-3.5" />}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] truncate" style={{ color: "var(--v1-ink)" }}>
+                              <span className="font-semibold">{fenceName(ev.attributes_json)}</span>
+                              <span style={{ color: "var(--v1-ink-muted)" }}>
+                                {" — "}
+                                {isEnter ? "masuk" : "keluar"}
+                              </span>
+                            </p>
+                            <p className="text-[11px] truncate" style={{ color: "var(--v1-ink-faint)" }}>
+                              {deviceLabel(ev)}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-[11px]" style={{ color: "var(--v1-ink-faint)" }}>
+                            {formatDateTimeSec(ev.event_time)}
+                          </span>
+                          <MapPinned
+                            className="w-4 h-4 shrink-0 transition-colors"
+                            style={{ color: hasPoint ? "var(--v1-ink-faint)" : "var(--v1-border)" }}
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  <PaginationBar
+                    page={paging.page}
+                    limit={paging.limit}
+                    canPrev={paging.page > 1}
+                    canNext={paging.hasNext}
+                    loading={paging.loading}
+                    maxVisitedPage={paging.maxVisitedPage}
+                    onPrev={paging.goPrev}
+                    onNext={paging.goNext}
+                    onPageJump={paging.goPage}
+                  />
+                </>
               )}
             </div>
           )}
         </section>
       )}
+
+      {/* Peta: area geofence (snapshot saat event) + titik GPS saat event */}
+      <GeofenceEventMapModal
+        open={!!mapEvent}
+        onClose={() => setMapEvent(null)}
+        geofence={mapArea ? mapArea.geofence : null}
+        areaNote={mapArea ? (mapArea.snapshot ? "Area saat event" : "Area terkini (log lama)") : undefined}
+        event={
+          mapEvent
+            ? {
+                event_type: mapEvent.event_type,
+                event_time: mapEvent.event_time,
+                device_id: mapEvent.device_id,
+                message: mapEvent.message,
+                ...eventPoint(mapEvent),
+              }
+            : null
+        }
+      />
 
       <ConfirmModal
         open={!!toDelete}

@@ -66,7 +66,12 @@ function currentBusinessId(): string {
 }
 
 function goLogin() {
-  if (typeof window !== "undefined") window.location.href = "/login";
+  if (typeof window === "undefined") return;
+  // Tiap app punya halaman login sendiri; jangan lempar ke login v1.
+  const p = window.location.pathname;
+  if (p.startsWith("/v2")) window.location.href = "/v2/login";
+  else if (p.startsWith("/mobile")) window.location.href = "/mobile/login";
+  else window.location.href = "/login";
 }
 
 /**

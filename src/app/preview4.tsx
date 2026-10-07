@@ -864,8 +864,9 @@ export function Preview4() {
           </Link>
           <ul className="p4-nav-links">
             <li><a href="#fitur">Fitur</a></li>
+            <li><a href="#keunggulan">Keunggulan</a></li>
+            <li><a href="#kemudahan">Kemudahan</a></li>
             <li><a href="#testimoni">Testimoni</a></li>
-            <li><a href="#keamanan">Keamanan</a></li>
             <li><a href="#konsultasi">Konsultasi</a></li>
           </ul>
           <div className="p4-nav-right">
@@ -898,8 +899,9 @@ export function Preview4() {
           <div className="p4-container" style={{ paddingBottom: 14 }}>
             <ul className="p4-nav-links p4-nav-links--open">
               <li><a href="#fitur" onClick={() => setNavOpen(false)}>Fitur</a></li>
+              <li><a href="#keunggulan" onClick={() => setNavOpen(false)}>Keunggulan</a></li>
+              <li><a href="#kemudahan" onClick={() => setNavOpen(false)}>Kemudahan</a></li>
               <li><a href="#testimoni" onClick={() => setNavOpen(false)}>Testimoni</a></li>
-              <li><a href="#keamanan" onClick={() => setNavOpen(false)}>Keamanan</a></li>
               <li><a href="#konsultasi" onClick={() => setNavOpen(false)}>Konsultasi</a></li>
             </ul>
           </div>
@@ -971,8 +973,53 @@ export function Preview4() {
         </div>
       </section>
 
-      {/* 3 · TESTIMONIALS */}
-      <section className="p4-section" style={{ paddingTop: 64 }} id="testimoni">
+      {/* 3 · COMPARISON */}
+      <section className="p4-section" id="keunggulan" style={{ paddingTop: 64 }}>
+        <div className="p4-container">
+          <div className="p4-section-head" data-reveal>
+            <p className="p4-eyebrow">Selalu terhubung</p>
+            <h2 className="p4-h2">Satu dashboard untuk seluruh armada</h2>
+            <p className="p4-sub">
+              Tanpa sistem, data kendaraan tersebar di banyak tempat. Dengan
+              TrackGPS, semuanya mengalir ke satu dashboard yang bisa diakses
+              seluruh tim.
+            </p>
+          </div>
+
+          <div className="p4-compare" data-reveal style={{ animationDelay: "80ms" }}>
+            <div className="p4-compare-col">
+              <div className="p4-compare-tag p4-compare-tag--muted">Tanpa TrackGPS</div>
+              <div className="p4-compare-note">Data terpencar, rekap manual, keputusan lambat.</div>
+              <div className="p4-replicas">
+                {COMPARE_BEFORE.map((c) => (
+                  <div key={c.label} className="p4-replica">
+                    <span className="p4-replica-icon">{c.icon}</span>
+                    <span className="p4-replica-label">{c.label}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="p4-compare-foot">4 celah · baru ketahuan belakangan</p>
+            </div>
+
+            <div className="p4-compare-col">
+              <div className="p4-compare-tag p4-compare-tag--good">Dengan TrackGPS</div>
+              <div className="p4-compare-note">Satu dashboard, semua perangkat, selalu sinkron.</div>
+              <div className="p4-replicas">
+                {COMPARE_AFTER.map((c) => (
+                  <div key={c.label} className="p4-replica p4-replica--warm">
+                    <span className="p4-replica-icon">{c.icon}</span>
+                    <span className="p4-replica-label">{c.label}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="p4-compare-foot">1 dashboard · serba otomatis</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4 · TESTIMONIALS */}
+      <section className="p4-section p4-section--alt" id="testimoni">
         <div className="p4-container">
           <div className="p4-section-head" data-reveal>
             <p className="p4-eyebrow">Kata pelanggan</p>
@@ -1050,53 +1097,8 @@ export function Preview4() {
         </div>
       </section>
 
-      {/* 4 · COMPARISON */}
-      <section className="p4-section p4-section--alt">
-        <div className="p4-container">
-          <div className="p4-section-head" data-reveal>
-            <p className="p4-eyebrow">Selalu terhubung</p>
-            <h2 className="p4-h2">Satu dashboard untuk seluruh armada</h2>
-            <p className="p4-sub">
-              Tanpa sistem, data kendaraan tersebar di banyak tempat. Dengan
-              TrackGPS, semuanya mengalir ke satu dashboard yang bisa diakses
-              seluruh tim.
-            </p>
-          </div>
-
-          <div className="p4-compare" data-reveal style={{ animationDelay: "80ms" }}>
-            <div className="p4-compare-col">
-              <div className="p4-compare-tag p4-compare-tag--muted">Tanpa TrackGPS</div>
-              <div className="p4-compare-note">Data terpencar, rekap manual, keputusan lambat.</div>
-              <div className="p4-replicas">
-                {COMPARE_BEFORE.map((c) => (
-                  <div key={c.label} className="p4-replica">
-                    <span className="p4-replica-icon">{c.icon}</span>
-                    <span className="p4-replica-label">{c.label}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="p4-compare-foot">4 celah · baru ketahuan belakangan</p>
-            </div>
-
-            <div className="p4-compare-col">
-              <div className="p4-compare-tag p4-compare-tag--good">Dengan TrackGPS</div>
-              <div className="p4-compare-note">Satu dashboard, semua perangkat, selalu sinkron.</div>
-              <div className="p4-replicas">
-                {COMPARE_AFTER.map((c) => (
-                  <div key={c.label} className="p4-replica p4-replica--warm">
-                    <span className="p4-replica-icon">{c.icon}</span>
-                    <span className="p4-replica-label">{c.label}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="p4-compare-foot">1 dashboard · serba otomatis</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* 5 · KEMUDAHAN */}
-      <section className="p4-section">
+      <section className="p4-section" id="kemudahan">
         <div className="p4-container">
           <div className="p4-section-head" data-reveal>
             <p className="p4-eyebrow">Kemudahan</p>

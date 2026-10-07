@@ -67,6 +67,35 @@ export function formatDate(value: string): string {
 }
 
 /**
+ * Label relatif terhadap sekarang, mis. "3 menit yang lalu" / "2 hari lagi".
+ * Dipakai sebagai keterangan tambahan di bawah tanggal agar lebih informatif.
+ * Waktu diperlakukan sebagai wall-clock (tanpa konversi timezone).
+ */
+export function formatRelative(value: string): string {
+  const p = parseDateParts(value);
+  if (!p) return "";
+  const then = new Date(p.year, p.month, p.day, p.hour, p.minute, p.second).getTime();
+  const diffMs = Date.now() - then;
+  const future = diffMs < 0;
+  const abs = Math.abs(diffMs);
+
+  const minutes = Math.floor(abs / 60000);
+  if (minutes < 1) return "baru saja";
+
+  const hours = Math.floor(abs / 3600000);
+  const days = Math.floor(abs / 86400000);
+
+  let label: string;
+  if (minutes < 60) label = `${minutes} menit`;
+  else if (hours < 24) label = `${hours} jam`;
+  else if (days < 30) label = `${days} hari`;
+  else if (days < 365) label = `${Math.floor(days / 30)} bulan`;
+  else label = `${Math.floor(days / 365)} tahun`;
+
+  return future ? `${label} lagi` : `${label} yang lalu`;
+}
+
+/**
  * Waktu lokal sekarang sebagai "YYYY-MM-DD HH:mm:ss" memakai komponen lokal
  * (bukan `toISOString` yang UTC). Dipakai untuk timestamp optimistik di FE.
  */

@@ -23,6 +23,15 @@ const IDR = new Intl.NumberFormat("id-ID", {
   maximumFractionDigits: 0,
 });
 
+/**
+ * Nominal invoice yang ditampilkan. total_transfer = amount + biaya admin dan
+ * baru terisi setelah order pembayaran dibuat; sebelum itu nilainya 0, jadi
+ * harus fallback ke amount (pakai || bukan ??, karena 0 tetap "kosong" di sini).
+ */
+function invoiceNominal(inv: Pick<Invoice, "total_transfer" | "amount">): number {
+  return inv.total_transfer || inv.amount || 0;
+}
+
 const STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
   pending: { label: "Menunggu bayar", bg: "var(--v1-surface-raised)", color: "var(--v1-ink-muted)" },
   paid: { label: "Lunas", bg: "var(--v1-success-bg, #dcfce7)", color: "var(--v1-success, #16a34a)" },
@@ -141,7 +150,7 @@ function InvoiceContent() {
       ),
     },
     { key: "months", label: "Durasi", render: (inv) => `${inv.months} bulan` },
-    { key: "amount", label: "Nominal", render: (inv) => IDR.format(inv.total_transfer || inv.amount) },
+    { key: "amount", label: "Nominal", render: (inv) => IDR.format(invoiceNominal(inv)) },
     { key: "status", label: "Status", render: (inv) => <InvoiceStatusBadge status={inv.status} /> },
     {
       key: "due_date",
@@ -189,7 +198,7 @@ function InvoiceContent() {
       />
 
       {payFor && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPayFor(null)} />
           <div className="relative w-full max-w-md rounded-2xl shadow-xl overflow-hidden" style={{ background: "var(--v1-surface)", border: "1px solid var(--v1-border)" }}>
             <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--v1-border-subtle)" }}>
@@ -202,7 +211,7 @@ function InvoiceContent() {
             <div className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-[13px]" style={{ color: "var(--v1-ink-faint)" }}>Nominal</span>
-                <span className="text-[15px] font-bold" style={{ color: "var(--v1-ink)" }}>{IDR.format(payResult?.total_bayar ?? payFor.total_transfer ?? payFor.amount)}</span>
+                <span className="text-[15px] font-bold" style={{ color: "var(--v1-ink)" }}>{IDR.format(payResult?.total_bayar || invoiceNominal(payFor))}</span>
               </div>
 
               {paidNow || payFor.status === "paid" ? (

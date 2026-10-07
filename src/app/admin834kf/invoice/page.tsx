@@ -241,7 +241,7 @@ export default function InvoicePage() {
             </div>
           )}
           <FormField label="Device ID" required>
-            <Input value={form.device_id} onChange={(v) => setForm({ ...form, device_id: v })} placeholder="DEV_..." />
+            <Input value={form.device_id} onChange={(v) => setForm({ ...form, device_id: v })} placeholder="GPS_..." />
           </FormField>
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Durasi (bulan)" required>

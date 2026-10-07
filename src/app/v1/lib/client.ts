@@ -368,38 +368,6 @@ export function deviceDetail(deviceId: string): Promise<ApiResponse<Device>> {
   return apiFetch("/client/device/detail", { device_id: deviceId });
 }
 
-// POST /client/device/add
-export function deviceCreate(payload: {
-  name: string;
-  unique_id: string;
-  protocol?: string;
-  model?: string;
-  category?: string;
-  sim_number?: string;
-  phone_number?: string;
-}): Promise<ApiResponse<Device>> {
-  return apiFetch("/client/device/add", payload);
-}
-
-// POST /client/device/update
-export function deviceUpdate(payload: {
-  device_id: string;
-  name?: string;
-  protocol?: string;
-  model?: string;
-  category?: string;
-  sim_number?: string;
-  phone_number?: string;
-  speed_threshold?: number;
-}): Promise<ApiResponse<null>> {
-  return apiFetch("/client/device/update", payload);
-}
-
-// POST /client/device/delete
-export function deviceDelete(deviceId: string): Promise<ApiResponse<null>> {
-  return apiFetch("/client/device/delete", { device_id: deviceId });
-}
-
 /**
  * POST /client/device/positions — device + posisi terakhir (tbl_latest_position).
  * latitude/longitude bernilai 0 bila perangkat belum pernah mengirim fix GPS.
@@ -437,23 +405,6 @@ export function cameraCreate(payload: {
   channel?: number;
 }): Promise<ApiResponse<Camera>> {
   return apiFetch("/client/camera/add", payload);
-}
-
-// POST /client/camera/update
-export function cameraUpdate(payload: {
-  camera_id: string;
-  name?: string;
-  serial_number?: string;
-  stream_url?: string;
-  channel?: number;
-  disabled?: number;
-}): Promise<ApiResponse<null>> {
-  return apiFetch("/client/camera/update", payload);
-}
-
-// POST /client/camera/delete
-export function cameraDelete(cameraId: string): Promise<ApiResponse<null>> {
-  return apiFetch("/client/camera/delete", { camera_id: cameraId });
 }
 
 /* ============ Vehicle ============ */

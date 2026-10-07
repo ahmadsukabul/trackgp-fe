@@ -1,0 +1,649 @@
+/* Hallmark · Client App MOBILE — turunan tema v2 "Ledger" (light-only)
+ * Palet sama dengan v2/landing Preview 4: light warm-neutral, Inter-only,
+ * aksen hijau #76b900. Layout khusus mobile (app bar + bottom nav + kartu besar).
+ *
+ * Token --v1-* di-override di scope .mobile-root supaya komponen v1 yang dipakai
+ * ulang (MapCanvas, BusinessSwitcher, dst) otomatis bertema mobile tanpa diubah.
+ */
+
+.mobile-root {
+  /* Permukaan */
+  --v1-paper: #f2f2ef;
+  --v1-surface: #ffffff;
+  --v1-surface-raised: #fafaf9;
+  --v1-surface-hover: #f2f2ef;
+
+  /* Teks */
+  --v1-ink: #0f0f0e;
+  --v1-ink-muted: #6e6d64;
+  --v1-ink-faint: #9a998e;
+
+  /* Aksen hijau */
+  --v1-accent: #76b900;
+  --v1-accent-dim: #5f9600;
+  --v1-accent-light: rgba(118, 185, 0, 0.12);
+  --v1-accent-glow: rgba(118, 185, 0, 0);
+
+  /* Garis hairline */
+  --v1-border: #e8e8e3;
+  --v1-border-subtle: #f0f0ec;
+
+  /* Status */
+  --v1-success: #477200;
+  --v1-success-bg: rgba(118, 185, 0, 0.12);
+  --v1-warning: #b26a00;
+  --v1-warning-bg: rgba(178, 106, 0, 0.12);
+  --v1-danger: #953b3b;
+  --v1-danger-bg: rgba(149, 59, 59, 0.1);
+  --v1-danger-border: rgba(149, 59, 59, 0.3);
+
+  /* Sudut 0 penuh (selaras v2) */
+  --v1-radius: 0px;
+  --v1-radius-sm: 0px;
+  --v1-radius-lg: 0px;
+
+  /* Inter-only */
+  --v1-font-display: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
+  --v1-font-body: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Bayangan hairline */
+  --v1-shadow: 0 1px 2px rgba(15, 15, 14, 0.04);
+  --v1-shadow-md: 0 2px 8px rgba(15, 15, 14, 0.06);
+  --v1-shadow-lg: 0 10px 30px rgba(15, 15, 14, 0.08);
+  --v1-glow: none;
+
+  /* Skala radius Tailwind v4 -> 0 */
+  --radius: 0px;
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+
+  /* Mobile-specific */
+  --m-appbar-h: 56px;
+  --m-nav-h: 60px;
+  --m-gutter: 16px;
+  --m-safe-b: env(safe-area-inset-bottom, 0px);
+  --m-safe-t: env(safe-area-inset-top, 0px);
+
+  background: var(--v1-paper);
+  color: var(--v1-ink);
+  font-family: var(--v1-font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mobile selalu terang, apa pun theme global */
+html.dark .mobile-root,
+html .mobile-root {
+  background: var(--v1-paper);
+  color: var(--v1-ink);
+}
+
+.mobile-root select option {
+  background-color: var(--v1-surface);
+  color: var(--v1-ink);
+}
+
+.mobile-root .bg-white,
+.mobile-root [class*="bg-white"] {
+  background-color: var(--v1-surface) !important;
+}
+
+.mobile-root .bg-gray-50,
+.mobile-root [class*="bg-gray-50"],
+.mobile-root .bg-gray-100,
+.mobile-root [class*="bg-gray-100"]:not([class*="animate-pulse"]),
+.mobile-root .bg-gray-200,
+.mobile-root [class*="bg-gray-200"] {
+  background-color: var(--v1-surface-raised) !important;
+}
+
+/* ============================================================
+ * Shell: app bar atas + konten scroll + bottom nav
+ * ============================================================ */
+
+.m-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--v1-paper);
+}
+
+.m-appbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: calc(var(--m-appbar-h) + var(--m-safe-t));
+  padding: var(--m-safe-t) var(--m-gutter) 0;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--v1-border);
+}
+
+.m-appbar-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--v1-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.m-appbar-sub {
+  font-size: 11px;
+  color: var(--v1-ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.m-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: var(--v1-ink-muted);
+  cursor: pointer;
+}
+
+.m-iconbtn:active {
+  background: var(--v1-surface-raised);
+}
+
+.m-main {
+  flex: 1 1 auto;
+  padding: var(--m-gutter);
+  padding-bottom: calc(var(--m-nav-h) + var(--m-safe-b) + 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Bottom nav */
+.m-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  height: calc(var(--m-nav-h) + var(--m-safe-b));
+  padding-bottom: var(--m-safe-b);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--v1-border);
+}
+
+.m-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-decoration: none;
+  color: var(--v1-ink-faint);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
+}
+
+.m-nav-item.is-active {
+  color: var(--v1-ink);
+}
+
+.m-nav-item.is-active .m-nav-ico {
+  color: var(--v1-accent);
+}
+
+.m-nav-ico {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+}
+
+.m-nav-item.is-active .m-nav-ico::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--v1-accent-light);
+  z-index: -1;
+}
+
+/* ============================================================
+ * Komponen umum mobile
+ * ============================================================ */
+
+.m-card {
+  background: var(--v1-surface);
+  border: 1px solid var(--v1-border);
+}
+
+.m-card-pad {
+  padding: 16px;
+}
+
+.m-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--v1-ink-faint);
+  margin: 0 0 8px;
+}
+
+.m-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.m-row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.m-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.m-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--v1-surface);
+  border: 1px solid var(--v1-border);
+  text-decoration: none;
+}
+
+.m-stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--v1-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.m-stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--v1-ink-muted);
+}
+
+.m-list {
+  display: flex;
+  flex-direction: column;
+  background: var(--v1-surface);
+  border: 1px solid var(--v1-border);
+}
+
+.m-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--v1-border-subtle);
+  text-decoration: none;
+  color: var(--v1-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.m-list-item:last-child {
+  border-bottom: none;
+}
+
+.m-list-item:active {
+  background: var(--v1-surface-raised);
+}
+
+.m-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--v1-font-body);
+  border: 1px solid var(--v1-border);
+  background: var(--v1-surface);
+  color: var(--v1-ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.m-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.m-btn-primary {
+  background: var(--v1-accent);
+  border-color: var(--v1-accent);
+  color: #0f0f0e;
+}
+
+.m-btn-primary:active:not(:disabled) {
+  background: #6aa800;
+}
+
+.m-btn-block {
+  width: 100%;
+}
+
+.m-input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  font-size: 15px;
+  font-family: var(--v1-font-body);
+  background: var(--v1-surface);
+  border: 1px solid var(--v1-border);
+  border-radius: 0;
+  color: var(--v1-ink);
+  outline: none;
+}
+
+.m-input:focus {
+  border-color: var(--v1-accent);
+  box-shadow: 0 0 0 3px var(--v1-accent-light);
+}
+
+.m-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--v1-ink-muted);
+  margin-bottom: 7px;
+}
+
+.m-muted {
+  color: var(--v1-ink-muted);
+}
+
+.m-faint {
+  color: var(--v1-ink-faint);
+}
+
+.m-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--v1-ink-faint);
+  border: 1px dashed var(--v1-border);
+}
+
+.m-error {
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--v1-danger-bg);
+  border: 1px solid var(--v1-danger-border);
+  color: var(--v1-danger);
+}
+
+/* ============================================================
+ * Onboarding
+ * ============================================================ */
+
+.m-onboard {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--v1-surface);
+  padding: calc(var(--m-safe-t) + 16px) var(--m-gutter) calc(var(--m-safe-b) + 20px);
+}
+
+.m-onboard-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+}
+
+.m-onboard-track {
+  flex: 1 1 auto;
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.m-onboard-track::-webkit-scrollbar {
+  display: none;
+}
+
+.m-onboard-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 24px;
+  padding: 20px 8px;
+}
+
+.m-onboard-art {
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--v1-surface-raised);
+  border: 1px solid var(--v1-border);
+  color: var(--v1-accent);
+}
+
+.m-onboard-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--v1-ink);
+  margin: 0;
+}
+
+.m-onboard-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--v1-ink-muted);
+  margin: 0;
+  max-width: 34ch;
+}
+
+.m-onboard-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.m-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.m-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--v1-border);
+  transition: width 0.2s, background 0.2s;
+}
+
+.m-dot.is-active {
+  width: 22px;
+  background: var(--v1-accent);
+}
+
+.m-textbtn {
+  background: none;
+  border: none;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v1-ink-muted);
+  cursor: pointer;
+}
+
+/* ============================================================
+ * Login mobile
+ * ============================================================ */
+
+.m-login {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+  padding: calc(var(--m-safe-t) + 28px) 20px calc(var(--m-safe-b) + 28px);
+  background: var(--v1-surface);
+}
+
+.m-login-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.m-login-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--v1-ink);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.m-login-wordmark {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--v1-ink);
+}
+
+.m-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.m-login-passwrap {
+  position: relative;
+}
+
+.m-login-passwrap .m-input {
+  padding-right: 46px;
+}
+
+.m-login-eye {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: none;
+  border: none;
+  color: var(--v1-ink-faint);
+  cursor: pointer;
+}
+
+/* ============================================================
+ * Banner pasang PWA
+ * ============================================================ */
+
+.m-install {
+  position: fixed;
+  left: var(--m-gutter);
+  right: var(--m-gutter);
+  bottom: calc(var(--m-nav-h) + var(--m-safe-b) + 12px);
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--v1-ink);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(15, 15, 14, 0.28);
+}
+
+.m-install-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.m-install-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.m-install-sub {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.m-install-btn {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 14px;
+  background: var(--v1-accent);
+  color: #0f0f0e;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.m-install-close {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 6px;
+}
+
+/* Sembunyikan scrollbar horizontal tak sengaja */
+.mobile-root {
+  overflow-x: hidden;
+}

@@ -257,7 +257,7 @@ export default function VehiclePage() {
         loading={loading}
         error={allowed ? error : ""}
         searchPlaceholder="Cari nama atau nopol..."
-        addLabel="Tambah Kendaraan"
+        addLabel="Tambah"
         canAdd={allowed}
         rowKey={(v) => v.vehicle_id}
         onRefresh={load}
@@ -291,7 +291,7 @@ export default function VehiclePage() {
 
       {/* ---- Modal Hubungkan GPS ---- */}
       {deviceModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center">
+        <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto p-4 sm:items-center">
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => !deviceSaving && setDeviceModal(null)}

@@ -58,7 +58,7 @@ export default function CrudPage<T>({
     : rows;
 
   return (
-    <div className="max-w-[1400px] mx-auto">
+    <div className="max-w-[1400px]">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
         <div>
           <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--v1-ink)", fontFamily: "var(--v1-font-display)" }}>
@@ -146,7 +146,10 @@ export default function CrudPage<T>({
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--v1-border-subtle)", background: "var(--v1-surface-raised)" }}>
+              <tr
+                className="border-b"
+                style={{ borderBottomColor: "var(--v1-border-subtle)", background: "var(--v1-surface-raised)" }}
+              >
                 {columns.map((c) => (
                   <th
                     key={c.key}
@@ -169,7 +172,11 @@ export default function CrudPage<T>({
             <tbody>
               {loading && rows.length === 0 ? (
                 Array.from({ length: 4 }).map((_, i) => (
-                  <tr key={i} style={{ borderBottom: "1px solid var(--v1-border-subtle)" }}>
+                  <tr
+                    key={i}
+                    className="border-b last:border-0"
+                    style={{ borderBottomColor: "var(--v1-border-subtle)" }}
+                  >
                     {columns.map((c) => (
                       <td key={c.key} className="px-4 py-3.5">
                         <div className="h-3.5 rounded animate-pulse" style={{ background: "var(--v1-border)" }} />
@@ -187,8 +194,8 @@ export default function CrudPage<T>({
                 filtered.map((row) => (
                   <tr
                     key={rowKey(row)}
-                    className="transition-colors"
-                    style={{ borderBottom: "1px solid var(--v1-border-subtle)" }}
+                    className="border-b last:border-0 transition-colors"
+                    style={{ borderBottomColor: "var(--v1-border-subtle)" }}
                   >
                     {columns.map((c) => (
                       <td

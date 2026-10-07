@@ -186,7 +186,7 @@ export default function MapCanvas({
           [
             ["online", "Online"],
             ["offline", "Offline"],
-            ["pending", "Pending"],
+            ["pending", "Parkir"],
           ] as const
         ).map(([key, label]) => (
           <span key={key} className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--v1-ink-muted)" }}>

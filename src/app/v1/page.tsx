@@ -13,6 +13,7 @@ import {
   type DevicePosition,
 } from "./lib/client";
 import { getApiErrorMessage } from "./lib/api";
+import { useBasePath } from "./lib/base-path";
 import { MENU } from "./lib/menu";
 import { formatDateTimeSec } from "@/lib/format-date";
 
@@ -27,7 +28,8 @@ const Map = dynamic(() => import("./components/MapCanvas"), {
 const REFRESH_MS = 60_000;
 
 export default function DashboardPage() {
-  const { can, activeBusiness, isOwner, loading: bizLoading, activeBusinessId } = useBusiness();
+  const { can, activeBusiness, loading: bizLoading, activeBusinessId } = useBusiness();
+  const base = useBasePath();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -123,14 +125,14 @@ export default function DashboardPage() {
   const reportedCount = points.filter((p) => p.last_seen_at).length;
 
   const cards = [
-    { label: "Perangkat GPS", value: stats?.total_devices ?? 0, href: "/v1/gps", icon: Radio, menu: MENU.gps },
-    { label: "Kendaraan", value: stats?.total_vehicles ?? 0, href: "/v1/vehicle", icon: Car, menu: MENU.vehicle },
-    { label: "Supir", value: stats?.total_drivers ?? 0, href: "/v1/driver", icon: UserCog, menu: MENU.driver },
-    { label: "Anggota Tim", value: stats?.total_users ?? 0, href: "/v1/team", icon: Users, menu: MENU.team },
+    { label: "Perangkat GPS", value: stats?.total_devices ?? 0, href: `${base}/gps`, icon: Radio, menu: MENU.gps },
+    { label: "Kendaraan", value: stats?.total_vehicles ?? 0, href: `${base}/vehicle`, icon: Car, menu: MENU.vehicle },
+    { label: "Supir", value: stats?.total_drivers ?? 0, href: `${base}/driver`, icon: UserCog, menu: MENU.driver },
+    { label: "Anggota Tim", value: stats?.total_users ?? 0, href: `${base}/team`, icon: Users, menu: MENU.team },
   ].filter((c) => can(c.menu));
 
   return (
-    <div className="max-w-[1400px] mx-auto">
+    <div className="max-w-[1400px]">
       <div className="mb-6">
         <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--v1-ink)", fontFamily: "var(--v1-font-display)" }}>Dashboard</h1>
         <p className="mt-1 text-[13px] flex items-center gap-1.5" style={{ color: "var(--v1-ink-faint)" }}>
@@ -287,7 +289,7 @@ export default function DashboardPage() {
               </p>
               <p className="text-[12px] max-w-sm leading-relaxed" style={{ color: "var(--v1-ink-faint)" }}>
                 Daftarkan perangkat di menu{" "}
-                <Link href="/v1/gps" className="font-semibold hover:underline" style={{ color: "var(--v1-accent)" }}>
+                <Link href={`${base}/gps`} className="font-semibold hover:underline" style={{ color: "var(--v1-accent)" }}>
                   GPS
                 </Link>
                 , lalu nyalakan tracker-nya. Marker muncul begitu perangkat mengirim koordinat
@@ -297,22 +299,6 @@ export default function DashboardPage() {
           ) : (
             <Map markers={markers} onSelect={() => undefined} />
           )}
-        </div>
-      )}
-
-      {isOwner && (
-        <div
-          className="rounded-2xl p-5"
-          style={{ background: "var(--v1-surface)", border: "1px solid var(--v1-border)" }}
-        >
-          <h2 className="text-[14px] font-bold mb-1" style={{ color: "var(--v1-ink)", fontFamily: "var(--v1-font-display)" }}>
-            Langkah berikutnya
-          </h2>
-          <p className="text-[13px] leading-relaxed" style={{ color: "var(--v1-ink-muted)" }}>
-            Daftarkan perangkat GPS di menu <b>GPS</b>, lalu tambahkan <b>Kamera</b> yang menempel ke
-            perangkat tersebut. Hubungkan tiap kendaraan dengan GPS dan supir agar riwayat perjalanan
-            terbaca per armada.
-          </p>
         </div>
       )}
     </div>

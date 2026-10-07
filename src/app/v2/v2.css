@@ -1,0 +1,416 @@
+/* Hallmark · Client App v2 — tema "Ledger" (light-only)
+ * Mengadopsi bahasa visual landing Preview 4:
+ *   light warm-neutral · Inter-only · radius 0 · hairline · aksen hijau #76b900
+ *
+ * Trik: halaman v1 dipakai ulang apa adanya. Semua token --v1-* di-override di
+ * scope .v2-root, jadi seluruh app otomatis bertema tanpa duplikasi logika.
+ * v2 selalu terang, seperti v1 yang selalu gelap.
+ */
+
+.v2-root {
+  /* Permukaan — kanvas abu hangat, kartu putih */
+  --v1-paper: #f7f7f6;
+  --v1-surface: #ffffff;
+  --v1-surface-raised: #fafaf9;
+  --v1-surface-hover: #f2f2ef;
+
+  /* Teks */
+  --v1-ink: #0f0f0e;
+  --v1-ink-muted: #6e6d64;
+  --v1-ink-faint: #9a998e;
+
+  /* Aksen hijau landing */
+  --v1-accent: #76b900;
+  --v1-accent-dim: #5f9600;
+  --v1-accent-light: rgba(118, 185, 0, 0.12);
+  --v1-accent-glow: rgba(118, 185, 0, 0);
+
+  /* Garis hairline */
+  --v1-border: #e8e8e3;
+  --v1-border-subtle: #f0f0ec;
+
+  /* Status */
+  --v1-success: #477200;
+  --v1-success-bg: rgba(118, 185, 0, 0.12);
+  --v1-warning: #b26a00;
+  --v1-warning-bg: rgba(178, 106, 0, 0.12);
+  --v1-danger: #953b3b;
+  --v1-danger-bg: rgba(149, 59, 59, 0.1);
+  --v1-danger-border: rgba(149, 59, 59, 0.3);
+
+  /* Sudut 0 penuh (token lama) */
+  --v1-radius: 0px;
+  --v1-radius-sm: 0px;
+  --v1-radius-lg: 0px;
+
+  /* Inter-only — buang JetBrains Mono */
+  --v1-font-display: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
+  --v1-font-body: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Bayangan hairline, tanpa glow */
+  --v1-shadow: 0 1px 2px rgba(15, 15, 14, 0.04);
+  --v1-shadow-md: 0 2px 8px rgba(15, 15, 14, 0.06);
+  --v1-shadow-lg: 0 10px 30px rgba(15, 15, 14, 0.08);
+  --v1-glow: none;
+
+  /* Skala radius Tailwind v4 (rounded-sm/md/lg/xl/2xl/…) -> 0 */
+  --radius: 0px;
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+
+  background: var(--v1-paper);
+  color: var(--v1-ink);
+  font-family: var(--v1-font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* v2 selalu terang, apa pun theme global */
+html.dark .v2-root,
+html .v2-root {
+  background: var(--v1-paper);
+  color: var(--v1-ink);
+}
+
+/* Fallback kelas netral global di dalam v2 */
+.v2-root .bg-white,
+.v2-root [class*="bg-white"] {
+  background-color: var(--v1-surface) !important;
+}
+
+.v2-root .bg-gray-50,
+.v2-root [class*="bg-gray-50"],
+.v2-root .bg-gray-100,
+.v2-root [class*="bg-gray-100"]:not([class*="animate-pulse"]),
+.v2-root .bg-gray-200,
+.v2-root [class*="bg-gray-200"] {
+  background-color: var(--v1-surface-raised) !important;
+}
+
+.v2-root select option {
+  background-color: var(--v1-surface);
+  color: var(--v1-ink);
+}
+
+/* ============================================================
+ * LOGIN v2 — split: panel pendamping (kiri) + form (kanan)
+ * ============================================================ */
+
+.v2-login {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+  background: var(--v1-surface);
+}
+
+.v2-login-aside {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 48px;
+  background: var(--v1-surface-raised);
+  border-right: 1px solid var(--v1-border);
+  overflow: hidden;
+}
+
+/* Aksen hairline hijau di tepi atas panel */
+.v2-login-aside::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--v1-accent);
+}
+
+.v2-login-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.v2-login-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: var(--v1-ink);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.v2-login-wordmark {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--v1-ink);
+}
+
+.v2-login-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--v1-ink-muted);
+  margin: 0 0 12px;
+}
+
+.v2-login-headline {
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -1px;
+  color: var(--v1-ink);
+  margin: 0;
+  max-width: 16ch;
+}
+
+.v2-login-points {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.v2-login-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--v1-ink-muted);
+}
+
+.v2-login-point b {
+  color: var(--v1-ink);
+  font-weight: 600;
+}
+
+.v2-login-tick {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  background: var(--v1-accent-light);
+  color: var(--v1-accent-dim);
+}
+
+.v2-login-asidefoot {
+  font-size: 12px;
+  color: var(--v1-ink-faint);
+  border-top: 1px solid var(--v1-border);
+  padding-top: 16px;
+}
+
+.v2-login-main {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  overflow: hidden;
+}
+
+/* Grid hairline tipis di sudut kanan-atas supaya panel tidak terasa kosong.
+   Dipudarkan dengan mask radial sehingga hanya muncul samar di sudut. */
+.v2-login-main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--v1-border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--v1-border) 1px, transparent 1px);
+  background-size: 30px 30px;
+  background-position: top right;
+  -webkit-mask-image: radial-gradient(70% 70% at 100% 0%, #000 0%, rgba(0, 0, 0, 0.35) 42%, transparent 72%);
+  mask-image: radial-gradient(70% 70% at 100% 0%, #000 0%, rgba(0, 0, 0, 0.35) 42%, transparent 72%);
+}
+
+.v2-login-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 380px;
+}
+
+.v2-login-mobilebrand {
+  display: none;
+  margin-bottom: 28px;
+}
+
+.v2-login-title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--v1-ink);
+  margin: 0 0 6px;
+}
+
+.v2-login-sub {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--v1-ink-muted);
+  margin: 0 0 26px;
+}
+
+.v2-login-error {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: var(--v1-danger-bg);
+  border: 1px solid var(--v1-danger-border);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--v1-danger);
+}
+
+.v2-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.v2-login-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--v1-ink-muted);
+  margin-bottom: 7px;
+}
+
+.v2-login-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-family: var(--v1-font-body);
+  background: var(--v1-surface);
+  border: 1px solid var(--v1-border);
+  border-radius: 0;
+  color: var(--v1-ink);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.v2-login-input::placeholder {
+  color: var(--v1-ink-faint);
+}
+
+.v2-login-input:focus {
+  border-color: var(--v1-accent);
+  box-shadow: 0 0 0 3px var(--v1-accent-light);
+}
+
+.v2-login-passwrap {
+  position: relative;
+}
+
+.v2-login-passwrap .v2-login-input {
+  padding-right: 44px;
+}
+
+.v2-login-eye {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: none;
+  border: none;
+  color: var(--v1-ink-faint);
+  cursor: pointer;
+}
+
+.v2-login-eye:hover {
+  color: var(--v1-ink-muted);
+}
+
+.v2-login-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  margin-top: 4px;
+  background: var(--v1-accent);
+  color: #0f0f0e;
+  font-family: var(--v1-font-body);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  border: 1px solid var(--v1-accent);
+  border-radius: 0;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.v2-login-submit:hover:not(:disabled) {
+  background: #6aa800;
+  border-color: #6aa800;
+}
+
+.v2-login-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.v2-login-arrow {
+  transition: transform 0.2s ease;
+}
+
+.v2-login-submit:hover:not(:disabled) .v2-login-arrow {
+  transform: translateX(3px);
+}
+
+.v2-login-back {
+  display: block;
+  margin-top: 22px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--v1-ink-faint);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.v2-login-back:hover {
+  color: var(--v1-ink-muted);
+}
+
+@media (max-width: 880px) {
+  .v2-login {
+    grid-template-columns: 1fr;
+  }
+  .v2-login-aside {
+    display: none;
+  }
+  .v2-login-mobilebrand {
+    display: inline-flex;
+  }
+  .v2-login-main {
+    padding: 40px 20px;
+  }
+}

@@ -297,7 +297,7 @@ export default function TeamPage() {
 
   if (!allowed) {
     return (
-      <div className="max-w-[1400px] mx-auto">
+      <div className="max-w-[1400px]">
         <h1
           className="text-xl font-bold tracking-tight"
           style={{ color: "var(--v1-ink)", fontFamily: "var(--v1-font-display)" }}
@@ -319,7 +319,7 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto">
+    <div className="max-w-[1400px]">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
         <div>
           <h1
@@ -616,7 +616,7 @@ export default function TeamPage() {
 
       {/* Modal role — nama/deskripsi lewat ModalForm, grid checkbox menu custom */}
       {roleOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center">
+        <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto p-4 sm:items-center">
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setRoleOpen(false)} />
           <div
             className="relative my-8 w-full max-w-lg rounded-2xl shadow-xl"

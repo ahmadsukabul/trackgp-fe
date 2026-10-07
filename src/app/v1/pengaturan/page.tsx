@@ -50,7 +50,7 @@ export default function PengaturanPage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="max-w-5xl space-y-4">
         <div className="h-6 w-48 rounded animate-pulse" style={{ background: "var(--v1-border)" }} />
         <div className="h-64 rounded-2xl animate-pulse" style={{ background: "var(--v1-border)" }} />
       </div>
@@ -58,7 +58,7 @@ export default function PengaturanPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-5xl">
       <div className="mb-6">
         <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--v1-ink)" }}>
           Profil Bisnis
@@ -81,51 +81,42 @@ export default function PengaturanPage() {
             </div>
           )}
 
-          <div className="rounded-2xl p-6 space-y-4" style={{ background: "var(--v1-surface)", border: "1px solid var(--v1-border)" }}>
-            <div className="flex items-center gap-2 pb-2" style={{ borderBottom: "1px solid var(--v1-border-subtle)" }}>
-              <Building2 className="w-4 h-4" style={{ color: "var(--v1-accent)" }} />
-              <h2 className="text-[14px] font-bold" style={{ color: "var(--v1-ink)" }}>Identitas</h2>
-            </div>
-
-            <div>
-              <label className={labelCls} style={labelStyle}>Nama bisnis</label>
-              <input value={data?.name ?? ""} disabled className={inputCls} style={inputStyle} />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls} style={labelStyle}>Email</label>
-                <input value={data?.email ?? ""} disabled className={inputCls} style={inputStyle} />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            {/* Identitas bisnis */}
+            <div className="lg:col-span-2 rounded-2xl p-6 space-y-4" style={{ background: "var(--v1-surface)", border: "1px solid var(--v1-border)" }}>
+              <div className="flex items-center gap-2 pb-2" style={{ borderBottom: "1px solid var(--v1-border-subtle)" }}>
+                <Building2 className="w-4 h-4" style={{ color: "var(--v1-accent)" }} />
+                <h2 className="text-[14px] font-bold" style={{ color: "var(--v1-ink)" }}>Identitas</h2>
               </div>
+
               <div>
-                <label className={labelCls} style={labelStyle}>Telepon</label>
-                <input value={data?.phone ?? ""} disabled className={inputCls} style={inputStyle} />
+                <label className={labelCls} style={labelStyle}>Nama bisnis</label>
+                <input value={data?.name ?? ""} disabled className={inputCls} style={inputStyle} />
               </div>
-            </div>
 
-            <div>
-              <label className={labelCls} style={labelStyle}>Alamat</label>
-              <textarea
-                rows={3}
-                value={data?.address ?? ""}
-                disabled
-                className={`${inputCls} resize-none`}
-                style={inputStyle}
-              />
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls} style={labelStyle}>Email</label>
+                  <input value={data?.email ?? ""} disabled className={inputCls} style={inputStyle} />
+                </div>
+                <div>
+                  <label className={labelCls} style={labelStyle}>Telepon</label>
+                  <input value={data?.phone ?? ""} disabled className={inputCls} style={inputStyle} />
+                </div>
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2" style={{ borderTop: "1px solid var(--v1-border-subtle)" }}>
               <div>
-                <label className={labelCls} style={labelStyle}>Batas perangkat GPS</label>
-                <input
-                  value={data?.device_limit ? String(data.device_limit) : "0"}
+                <label className={labelCls} style={labelStyle}>Alamat</label>
+                <textarea
+                  rows={3}
+                  value={data?.address ?? ""}
                   disabled
-                  className={inputCls}
+                  className={`${inputCls} resize-none`}
                   style={inputStyle}
                 />
-                <p className="mt-1 text-[11px]" style={{ color: "var(--v1-ink-faint)" }}>0 = tanpa batas.</p>
               </div>
-              <div>
+
+              <div className="pt-2" style={{ borderTop: "1px solid var(--v1-border-subtle)" }}>
                 <label className={labelCls} style={labelStyle}>Status bisnis</label>
                 <input
                   value={data?.status === 1 ? "Aktif" : "Nonaktif"}
@@ -135,35 +126,35 @@ export default function PengaturanPage() {
                 />
               </div>
             </div>
-          </div>
 
-          {/* Akses efektif di bisnis ini */}
-          <div className="mt-6 rounded-2xl p-6" style={{ background: "var(--v1-surface)", border: "1px solid var(--v1-border)" }}>
-            <h2 className="text-[14px] font-bold mb-1" style={{ color: "var(--v1-ink)" }}>
-              Akses Anda di bisnis ini
-            </h2>
-            <p className="text-[12px] mb-4" style={{ color: "var(--v1-ink-faint)" }}>
-              {isOwner
-                ? "Sebagai owner, seluruh menu tersedia."
-                : "Ditentukan oleh role granular yang melekat pada keanggotaan Anda."}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {ALL_MENU_KEYS.map((key) => {
-                const has = isOwner || menuKeys.includes(key);
-                return (
-                  <span
-                    key={key}
-                    className="px-2.5 py-1 rounded-lg text-[12px] font-medium"
-                    style={
-                      has
-                        ? { background: "var(--v1-accent-light)", color: "var(--v1-accent)" }
-                        : { background: "var(--v1-surface-raised)", color: "var(--v1-ink-faint)", textDecoration: "line-through" }
-                    }
-                  >
-                    {MENU_LABELS[key]}
-                  </span>
-                );
-              })}
+            {/* Akses efektif di bisnis ini */}
+            <div className="rounded-2xl p-6" style={{ background: "var(--v1-surface)", border: "1px solid var(--v1-border)" }}>
+              <h2 className="text-[14px] font-bold mb-1" style={{ color: "var(--v1-ink)" }}>
+                Akses Anda di bisnis ini
+              </h2>
+              <p className="text-[12px] mb-4" style={{ color: "var(--v1-ink-faint)" }}>
+                {isOwner
+                  ? "Sebagai owner, seluruh menu tersedia."
+                  : "Ditentukan oleh role granular yang melekat pada keanggotaan Anda."}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {ALL_MENU_KEYS.map((key) => {
+                  const has = isOwner || menuKeys.includes(key);
+                  return (
+                    <span
+                      key={key}
+                      className="px-2.5 py-1 rounded-lg text-[12px] font-medium"
+                      style={
+                        has
+                          ? { background: "var(--v1-accent-light)", color: "var(--v1-accent)" }
+                          : { background: "var(--v1-surface-raised)", color: "var(--v1-ink-faint)", textDecoration: "line-through" }
+                      }
+                    >
+                      {MENU_LABELS[key]}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </>

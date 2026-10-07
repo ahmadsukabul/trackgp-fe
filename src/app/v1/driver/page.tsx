@@ -305,7 +305,7 @@ export default function DriverPage() {
 
       {/* ---- Modal Hubungkan Kendaraan ---- */}
       {vehicleModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center">
+        <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto p-4 sm:items-center">
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => !vehicleSaving && setVehicleModal(null)}

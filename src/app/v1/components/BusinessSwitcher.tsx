@@ -52,11 +52,8 @@ export default function BusinessSwitcher() {
       </select>
       {activeRole && (
         <span
-          className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0"
-          style={{
-            background: "var(--v1-surface-raised)",
-            color: "var(--v1-ink-faint)",
-          }}
+          className="hidden sm:inline text-[10px] font-semibold uppercase tracking-wide flex-shrink-0"
+          style={{ color: "var(--v1-accent-dim)" }}
         >
           {activeRole}
         </span>
