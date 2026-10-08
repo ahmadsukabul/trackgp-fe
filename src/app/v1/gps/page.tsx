@@ -124,12 +124,15 @@ export default function GpsPage() {
       label: "ID",
       render: (d) => (
         <div className="leading-tight">
-          <p
-            className="font-semibold text-[13px]"
-            style={{ color: "var(--v1-ink)", fontFamily: "var(--v1-font-display)" }}
+          <button
+            type="button"
+            onClick={() => router.push(`${base}/gps/${encodeURIComponent(d.device_id)}`)}
+            title="Lihat detail perangkat"
+            className="font-semibold text-[13px] text-left hover:underline"
+            style={{ color: "var(--v1-link)", fontFamily: "var(--v1-font-display)" }}
           >
             {d.device_id || "-"}
-          </p>
+          </button>
           {d.name ? (
             <p className="text-[11px]" style={{ color: "var(--v1-ink-faint)" }}>{d.name}</p>
           ) : null}

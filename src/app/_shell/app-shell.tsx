@@ -249,7 +249,9 @@ function Shell({
                   <ul className="space-y-0.5">
                     {group.items.map((item) => {
                       const href = `${base}${item.path}`;
-                      const isActive = pathname === href;
+                      const isActive =
+                        pathname === href ||
+                        (item.path !== "" && pathname.startsWith(href + "/"));
                       const Icon = item.icon;
                       return (
                         <li key={item.path || "index"}>

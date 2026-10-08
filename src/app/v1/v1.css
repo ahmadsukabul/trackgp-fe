@@ -13,6 +13,7 @@
   --v1-ink: oklch(95% 0.005 260);
   --v1-ink-muted: oklch(72% 0.015 260);
   --v1-ink-faint: oklch(52% 0.015 260);
+  --v1-link: oklch(76% 0.13 250);
   --v1-accent: oklch(72% 0.18 175);
   --v1-accent-dim: oklch(55% 0.14 175);
   --v1-accent-light: oklch(28% 0.06 175);

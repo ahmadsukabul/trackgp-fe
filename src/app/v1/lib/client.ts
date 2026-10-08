@@ -80,8 +80,12 @@ export interface Device {
   disabled: number;
   battery_level: number;
   course: number;
+  satellites: number;
+  signal_level: number;
   speed_threshold: number;
   defense_state?: number;
+  last_address?: string;
+  last_address_at?: string;
   price?: number;
   expired_at?: string;
   last_seen_at: string;
